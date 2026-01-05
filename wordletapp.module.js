@@ -6,7 +6,7 @@ import { doc, getDoc, setDoc, updateDoc, arrayUnion } from "firebase/firestore";
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '1.1',
+    version: '1.2',
     user: null,
     wordLength: 6,
     totalGuesses: 6,
@@ -52,7 +52,7 @@ export default () => ({
         // const arr = ["010112","200012","210110","211102","222222"]  // replace with this.guessStatus
         let newArr = []
         this.guessStatus.forEach(g => {
-            let str = g.split('').sort().reverse().join('').replaceAll(0, '').replaceAll(1, '🟡').replaceAll(2, '🟢')
+            let str = g.split('').sort().reverse().join('').replaceAll(0, '⚪').replaceAll(1, '🟡').replaceAll(2, '🟢')
             newArr.push(str || '⚪')
         })
         return newArr.join('\n')
@@ -201,7 +201,7 @@ export default () => ({
         // console.log(this.answer, answerClone, this.letters);
 
         // reset all letters in guess to default of 0
-        this.letters.forEach(g => { this.alphabetStatus[this.alphabet.indexOf(g)] = (g) ? 0 : null })
+        // this.letters.forEach(g => { this.alphabetStatus[this.alphabet.indexOf(g)] = (g) ? 0 : null })
 
         // iterate over each guessed letter, checking each letter of answer
         // 1. iterate over each letter in answer looking for right/right
@@ -254,6 +254,14 @@ export default () => ({
         // game on. done evaluating current guess, reset cursor & ready check
         this.isReadyToCheck = false
         if (this.cursor == this.wordLength) this.cursor = 0
+
+        // gracefull clear active row
+        setTimeout(() => {
+            for (let i = 0; i < this.wordLength; i++) {
+                this.letters[i] = ''
+                this.boxStatus[i] = ''
+            }
+        }, 200)
     },
     howManyInAnswer(l) {
         return (this.answer.split('')).filter(a => a == l).length
@@ -319,9 +327,8 @@ export default () => ({
     },
     shareGame() {
         // build full shareBlurb
-        // let blurb = 'WordLET 2.1.22, 4/6\n' + this.shareBlurb  // DEBUG!
-        // let blurb = 'Wordlet | Daily Challenge ' + this.dailyChallengeDay + ', ' + this.numGuesses + '/6\n'
-        let blurb = 'WordLetta.com | Daily Challenge ' + this.dailyChallengeDay + ' '
+        let title = (this.dailyChallenge) ? 'Daily Challenge ' + this.dailyChallengeDay : 'Random Game'
+        let blurb = 'WordLetta.com | ' + title + ' '
             + (this.isWinner ? '✔️' : '❌') + ' ' + this.numGuesses + '/6\n'
             + this.shareBlurb
 

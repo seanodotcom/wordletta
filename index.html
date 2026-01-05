@@ -11,6 +11,8 @@
   <link rel="icon" type="image/png" href="/logo.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&family=Ramabhadra&display=swap');
+
     #app {
       display: none;
     }
@@ -18,79 +20,48 @@
   <title>WordLetta</title>
 </head>
 
-<body class="">
+<body class="bg-slate-50 font-['Lato']">
   <noscript>WordLetta requires JavaScript to run.</noscript>
-  <div id="app" x-data="wordletApp()" class="flex flex-col min-h-screen w-screen bg-red-100"
+  <div id="app" x-data="wordletApp()" class="flex flex-col min-h-screen w-screen bg-slate-50 relative pb-20"
     @keyup.window="keyPressed()">
-    <header :class="(isWinner || isLoser) ? 'bg-gradient-to-r from-blue-400 to-blue-600' : 'bg-blue-300'"
-      class="flex-grow overflow-hidden w-screen p-1 md:p-3 lg:p-4 xl:p-6 transition-colors duration-1000">
-      <div class="flex gap-2 justify-between items-center">
-        <img src="/logo.png" alt="WordLetta" class="h-8 md:h-14 lg:h-20 drop-shadow-md" />
-        <button @click="showNewGameModal = true"
-          class="py-0 px-2 inline-block text-xs lg:text-lg text-blue-800 rounded shadow-blue-500"
-          :class="(isWinner || isLoser) ? 'bg-yellow-300 hover:bg-yellow-400 font-bold shadow-lg animate-bounce' : 'bg-blue-200 hover:bg-blue-100 shadow-sm'">New
-          Game</button>
-      </div>
-    </header>
 
-    <main class="flex flex-auto">
-      <div class="board p-1 lg:p-3 w-screen bg-gradient-to-b from-red-200 to-red-100">
+    <!-- HEADER REMOVED -->
+
+    <main class="flex flex-auto flex-col justify-center">
+      <div class="board p-3 lg:p-6 w-screen">
 
         <!-- boxes -->
-        <!-- <div class="flex justify-center items-center row guess py-2 gap-3 lg:gap-6 xl:gap-8 border-0"> -->
         <div class="flex justify-center items-center row guess py-1 md:py-2 gap-1 sm:gap-2 lg:gap-6 xl:gap-8 border-0">
           <template x-for="w, i in wordLength" :key="i">
             <div
-              class="flex letter justify-center items-center overflow-hidden bg-gradient-to-b from-gray-50 to-red-100 focus:outline-none max-w-48 border border-red-800 text-red-800 rounded-md"
+              class="flex letter justify-center items-center overflow-hidden bg-white focus:outline-none max-w-48 border-2 border-slate-300 text-slate-800 rounded-md shadow-sm transition-all duration-300 transform"
               :class="{
-                  'filled' : letters[i],
+                  'filled border-slate-500 scale-105' : letters[i],
                   'winner' : isWinner,
                   'opacity-50' : (isWinner || isLoser)
                 }">
-              <!-- class="inline-block font-bold text-6xl lg:text-8xl text-center text-red-800 h-20 md:h-40 md:w-32 xl:w-48 p-1" -->
               <input x-ref="box" :rel="i" x-model="letters[i]" maxlength="1"
-                class="inline-block font-bold text-3xl sm:text-4xl md:text-6xl lg:text-8xl text-center text-red-800 h-14 w-14 sm:h-20 sm:w-20 md:h-24 md:w-24 lg:h-40 lg:w-48 lg:p-1"
+                class="font-['Ramabhadra'] inline-block font-bold text-3xl sm:text-4xl md:text-6xl lg:text-8xl text-center text-slate-900 h-14 w-14 sm:h-20 sm:w-20 md:h-24 md:w-24 lg:h-40 lg:w-48 lg:p-1 bg-transparent"
                 :class="{
-                    'bg-amber-400': boxStatus[i] == 1,
-                    'bg-emerald-400': boxStatus[i] == 2
+                    'bg-amber-400 border-amber-500': boxStatus[i] == 1,
+                    'bg-emerald-500 border-emerald-600 text-white': boxStatus[i] == 2
                   }" type="text" disabled="disabled" />
             </div>
           </template>
         </div>
 
-        <!-- keyboard -->
-        <div :class="(isWinner || isLoser) ? 'opacity-40' : ''"
-          class="flex justify-center flex-wrap w-full border-0 gap-2 my-2">
-          <template x-for="letter, i in alphabet" :key="i">
-            <div x-ref="i" x-text="letter"
-              class="noselect cursor-pointer overflow-none p-1 w-12 h-auto mr-1 mb-1 text-sm text-center text-red-800 hover:bg-blue-200 rounded-md"
-              :class="{
-                  'bg-red-200': alphabetStatus[i] === '',
-                  'bg-red-500': alphabetStatus[i] === 0,
-                  'bg-amber-300': alphabetStatus[i] == 1,
-                  'bg-emerald-300': alphabetStatus[i] == 2
-                }" @click="letterClicked(letter)"></div>
-          </template>
-          <!-- Backspace / Enter -->
-          <div @click="backspace" :class="cursor == 0 ? 'opacity-30' : ''"
-            class="noselect cursor-pointer overflow-none align-middle text-center text-sm bg-gradient-to-r from-red-300 to-red-400 text-red-900 hover:bg-blue-200 rounded-md px-1 w-12 ml-1 flex items-center justify-center">
-            ⌫</div>
-          <div @click="enter" :class="!isReadyToCheck ? 'opacity-30' : 'animate-bounce'"
-            class="noselect cursor-pointer overflow-none align-middle text-center text-sm bg-gradient-to-r from-red-300 to-red-400 text-red-900 hover:bg-blue-200 rounded-md p-1 w-16 mx-2 font-bold disabled:opacity-40 flex items-center justify-center">
-            ENTER</div>
-        </div>
-
-        <!-- guesses -->
-        <div :class="{'bg-green-100' : isWinner, 'bg-yellow-100' : isLoser}"
-          class="flex flex-wrap justify-start items-center min-h-18 my-4 p-1 lg:p-3 gap-1 lg:gap-3 border border-red-800 overflow-none">
-          <template x-for="guess, guessIndex in guesses" :key="guessIndex">
-            <div
-              class="flex text-blue-800 border-1 border-blue-800 mr-1 md:mr-4 lg:mr-4 tracking-tight md:tracking-normal text-sm md:text-lg lg:text-xl">
-              <template x-for="guessLet, guessLetterIndex in guess" :key="guessLet + guessLetterIndex">
-                <template x-if="guessStatus[guessIndex]">
-                  <span x-text="guessLet" :class="{
-                          'bg-yellow-300' : guessStatus[guessIndex] && guessStatus[guessIndex][guessLetterIndex] == '1',
-                          'bg-green-300' : guessStatus[guessIndex] && guessStatus[guessIndex][guessLetterIndex] == '2'
+        <!-- guesses (MOVED BELOW ACTIVE ROW) -->
+        <div class="flex flex-col items-center min-h-18 my-4 p-1 lg:p-3 gap-2 overflow-visible">
+          <template x-for="(guess, guessIndex) in guesses.slice().reverse()" :key="guesses.length - 1 - guessIndex">
+            <div class="flex gap-2 z-10 drop-shadow-md">
+              <template x-for="(guessLet, guessLetterIndex) in guess" :key="guessLet + guessLetterIndex">
+                <template x-if="guessStatus[guesses.length - 1 - guessIndex]">
+                  <span x-text="guessLet"
+                    class="font-['Ramabhadra'] flex justify-center items-center w-11 h-11 md:w-14 md:h-14 text-lg md:text-2xl font-bold rounded text-slate-800 reveal"
+                    :style="`animation-delay: ${(guessLetterIndex * 150)}ms`" :class="{
+                          'bg-slate-200': guessStatus[guesses.length - 1 - guessIndex] && guessStatus[guesses.length - 1 - guessIndex][guessLetterIndex] == '0',
+                          'bg-amber-300': guessStatus[guesses.length - 1 - guessIndex] && guessStatus[guesses.length - 1 - guessIndex][guessLetterIndex] == '1',
+                          'bg-emerald-500 text-white': guessStatus[guesses.length - 1 - guessIndex] && guessStatus[guesses.length - 1 - guessIndex][guessLetterIndex] == '2'
                         }"></span>
                 </template>
 
@@ -98,6 +69,28 @@
             </div>
           </template>
         </div>
+
+        <!-- keyboard -->
+        <div :class="(isWinner || isLoser) ? 'opacity-40' : ''"
+          class="flex justify-center flex-wrap w-full border-0 gap-1.5 mt-8 mb-2 max-w-3xl mx-auto">
+          <template x-for="letter, i in alphabet" :key="i">
+            <div x-ref="i" x-text="letter"
+              class="noselect cursor-pointer overflow-none flex items-center justify-center w-8 md:w-10 h-10 md:h-12 text-lg md:text-2xl font-bold text-slate-700 bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 hover:from-white hover:to-slate-100 rounded shadow-sm transition-all duration-150 border border-slate-200"
+              :class="{
+                  'opacity-50': alphabetStatus[i] === 0,
+                  'from-amber-200 via-amber-300 to-amber-400 text-white border-amber-400': alphabetStatus[i] == 1,
+                  'from-emerald-300 via-emerald-400 to-emerald-500 text-white border-emerald-500': alphabetStatus[i] == 2
+                }" @click="letterClicked(letter)"></div>
+          </template>
+          <!-- Backspace / Enter -->
+          <div @click="backspace" :class="cursor == 0 ? 'opacity-30' : ''"
+            class="noselect cursor-pointer overflow-none flex items-center justify-center w-10 md:w-12 h-10 md:h-12 text-lg md:text-2xl font-bold text-slate-700 bg-gradient-to-br from-slate-100 to-slate-300 hover:from-slate-50 hover:to-slate-200 rounded shadow-sm px-1 ml-1 border border-slate-300">
+            ⌫</div>
+          <div @click="enter" :class="!isReadyToCheck ? 'opacity-30' : 'animate-bounce'"
+            class="noselect cursor-pointer overflow-none flex items-center justify-center px-4 h-10 md:h-12 text-sm md:text-base font-bold text-white bg-indigo-500 hover:bg-indigo-600 rounded shadow-sm mx-2 disabled:opacity-40 transition-all duration-200">
+            ENTER</div>
+        </div>
+
 
         <!-- DEBUG -->
         <div id="debug" class="text-xs">
@@ -109,83 +102,124 @@
             NEW GAME modal
           -->
         <div x-show="showNewGameModal" x-transition.opacity.duration.600ms style="display: none;"
-          class="fixed inset-0 z-30 flex items-center justify-center overflow-auto bg-red-900 bg-opacity-60">
+          class="fixed inset-0 z-30 flex items-center justify-center overflow-auto bg-slate-900 bg-opacity-75 backdrop-blur-sm">
           <!-- modal inner -->
           <div x-show="showNewGameModal" x-transition.duration.600ms
-            class="w-4/5 md:w-1/2 lg:w-2/5 p-6 mx-auto bg-white rounded shadow-lg"
+            class="w-4/5 md:w-1/2 lg:w-2/5 p-6 mx-auto bg-white rounded-xl shadow-2xl"
             @click.away="showNewGameModal = false">
             <!-- Title / Close-->
             <div class="flex items-start justify-between">
-              <h5 class="mr-3 mb-4 text-red-900 max-w-none text-2xl font-bold">New WordLetta</h5>
-              <button type="button" class="z-50 text-2xl font-bold text-red-900 cursor-pointer"
+              <h5 class="mr-3 mb-4 text-slate-800 max-w-none text-2xl font-bold">New WordLetta</h5>
+              <button type="button" class="z-50 text-2xl font-bold text-slate-400 hover:text-slate-600 cursor-pointer"
                 @click="showNewGameModal = false">&times;</button>
             </div>
 
             <!-- Login / Profile -->
-            <div class="mb-4 flex justify-between items-center bg-red-50 p-2 rounded">
+            <div class="mb-6 flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100">
               <template x-if="!user">
-                <button @click="login" class="flex items-center gap-2 text-sm font-bold text-blue-700 hover:underline">
+                <button @click="login"
+                  class="flex items-center gap-2 text-sm font-bold text-indigo-600 hover:text-indigo-800 hover:underline">
                   <span>Login to sync stats</span>
                 </button>
               </template>
               <template x-if="user">
                 <div class="flex justify-between w-full items-center">
-                  <div class="flex items-center gap-2">
-                    <img :src="user.photoURL" class="w-8 h-8 rounded-full border border-red-300">
-                    <span class="text-sm text-red-900" x-text="user.displayName"></span>
+                  <div class="flex items-center gap-3">
+                    <img :src="user.photoURL" class="w-8 h-8 rounded-full border border-slate-200 shadow-sm">
+                    <span class="text-sm font-semibold text-slate-700" x-text="user.displayName"></span>
                   </div>
-                  <button @click="logout" class="text-xs text-red-500 hover:underline">Logout</button>
+                  <button @click="logout"
+                    class="text-xs font-medium text-slate-400 hover:text-red-500 transition-colors">Logout</button>
                 </div>
               </template>
             </div>
 
             <!-- content -->
-            <!-- <div class="grid grid-cols-1 md:grid-cols-2 content-center bg-red-100 gap-4 md:divide-x-2 md:divide-red-200 text-red-900"> -->
-            <div class="grid grid-cols-1 place-items-center gap-3 divide-y-2 divide-red-200 text-red-900">
+            <div class="grid grid-cols-1 place-items-center gap-6 divide-y-2 divide-slate-100 text-slate-800">
 
               <!-- daily challenge -->
-              <div class="">
+              <div class="w-full flex flex-col items-center">
+                <h3 class="text-lg font-bold my-2 text-indigo-500">Daily Challenge</h3>
                 <template x-if="!dailyChallengeComplete">
                   <button @click="dailyChallenge = true; newGame()"
-                    class="hover:bg-orange-300 my-3 py-1 px-3 inline-block text-center text-md lg:text-lg text-orange-700 bg-orange-200 rounded shadow-md">Play
-                    Today's Challenge!</button>
+                    class="w-full hover:bg-indigo-600 hover:shadow-lg transition-all transform hover:-translate-y-0.5 py-3 px-6 text-center text-lg font-bold text-white bg-indigo-500 rounded-lg shadow-md">
+                    Play Today's Challenge!
+                  </button>
                 </template>
-                <template x-if="dailyChallengeComplete"><span class="text-sm">Challenge Complete. See you
-                    tomorrow!</span></template>
+                <template x-if="dailyChallengeComplete"><span
+                    class="text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full">Challenge Complete.
+                    See you tomorrow!</span></template>
               </div>
 
               <!-- # of letters -->
-              <div class="mt-3 pl-0">
-                <h3 class="text-lg md:text-xl my-1 text-orange-500">∞ Endless Mode</h3>
-                <div class="mt-1 text-xs md:text-lg lg:text-xl">
-                  <template x-for="i in 10">
-                    <button class="px-2 py-1 text-gray-100 text-xs" :class="{
-                            'bg-red-500' : wordLength == i,
-                            'bg-red-800' : wordLength !== i,
-                            'rounded-l-lg' : i == 1,
-                            'rounded-r-lg' : i == 10
-                          }" @click="wordLength = i; (wordLength > 6) ? hardMode = true : null" x-text="i"></button>
-                  </template> <span class="ml-1">LETTER<span x-text="wordLength > 1 ? 'S' : ''"></span></span>
+              <div class="mt-4 pt-4 w-full text-center">
+                <h3 class="text-lg font-bold my-2 text-indigo-500">∞ Endless Mode</h3>
+                <div class="flex flex-col items-center gap-2 mb-4">
+                  <div class="flex justify-center gap-1 flex-wrap">
+                    <template x-for="i in 5">
+                      <button
+                        class="w-8 h-8 flex items-center justify-center text-sm font-bold transition-all duration-200"
+                        :class="{
+                              'bg-indigo-600 text-white shadow-md transform scale-110 rounded-md z-10' : wordLength == i,
+                              'bg-slate-200 text-slate-500 hover:bg-slate-300' : wordLength !== i,
+                              'rounded-l-lg' : i == 1 && wordLength !== 1,
+                              'rounded-r-lg' : i == 5 && wordLength !== 5,
+                              'rounded' : (i !== 1 && i !== 5) && wordLength !== i
+                            }" @click="wordLength = i; (wordLength > 6) ? hardMode = true : null" x-text="i"></button>
+                    </template>
+                  </div>
+                  <div class="flex justify-center gap-1 flex-wrap">
+                    <template x-for="i in 5">
+                      <button
+                        class="w-8 h-8 flex items-center justify-center text-sm font-bold transition-all duration-200"
+                        :class="{
+                              'bg-indigo-600 text-white shadow-md transform scale-110 rounded-md z-10' : wordLength == (i+5),
+                              'bg-slate-200 text-slate-500 hover:bg-slate-300' : wordLength !== (i+5),
+                              'rounded-l-lg' : i == 1 && wordLength !== 6,
+                              'rounded-r-lg' : i == 5 && wordLength !== 10,
+                              'rounded' : (i !== 1 && i !== 5) && wordLength !== (i+5)
+                            }" @click="wordLength = (i+5); (wordLength > 6) ? hardMode = true : null"
+                        x-text="i+5"></button>
+                    </template>
+                  </div>
                 </div>
+                <div class="text-xs font-bold text-slate-400 tracking-wider">LETTERS</div>
 
                 <!-- Hard Mode Switch - force on high-letter, uncurated lists -->
-                <div class="mt-4">
-                  <div class="flex flex-row cursor-pointer" :class="wordLength > 6 ? 'opacity-40' : ''"
+                <div class="mt-6 flex justify-center">
+                  <div
+                    class="flex flex-row cursor-pointer items-center p-2 rounded-lg hover:bg-slate-50 transition-colors"
+                    :class="wordLength > 6 ? 'opacity-50 pointer-events-none' : ''"
                     @click="(wordLength <= 6) ? hardMode = !hardMode : null">
-                    <div class="w-10 h-6 flex items-center bg-gray-300 rounded-full p-1 ml-1 duration-300 ease-in-out"
-                      :class="{'bg-red-600': hardMode}">
-                      <div class="bg-red-100 w-4 h-3 rounded-full shadow-md transform duration-300 ease-in-out"
-                        :class="{'translate-x-4': hardMode}"></div>
+                    <div class="w-11 h-6 flex items-center bg-slate-300 rounded-full p-1 duration-300 ease-in-out"
+                      :class="{'bg-rose-500': hardMode}">
+                      <div class="bg-white w-4 h-4 rounded-full shadow-md transform duration-300 ease-in-out"
+                        :class="{'translate-x-5': hardMode}"></div>
                     </div>
-                    <span class="text-sm ml-2 inline-block" :class="hardMode ? 'font-bold' : ''"
-                      title="Includes words you've never heard of. Let's get nuts!">LUDICROUS MODE</span>
+                    <div class="group relative flex items-center">
+                      <span class="text-sm ml-3 font-semibold text-slate-600"
+                        :class="hardMode ? 'text-rose-600' : ''">LUDICROUS MODE</span>
+                      <div class="ml-2 text-slate-400 cursor-help">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                          stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <!-- Tooltip -->
+                        <div
+                          class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 p-2 bg-slate-800 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                          Adds many lightly used / esoteric words to the mix!
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div class="grid place-items-center">
+                <div class="grid place-items-center mt-6">
                   <button @click="newGame"
-                    class="hover:bg-red-300 mt-6 py-1 px-3 inline-block text-center text-md text-red-800 bg-red-200 rounded shadow-md">Play
-                    Endless Mode</button>
+                    class="hover:bg-slate-200 hover:text-slate-900 transition-colors py-2 px-6 text-center text-md font-bold text-slate-700 bg-slate-100 rounded-full border-2 border-slate-200">
+                    Play Endless Mode
+                  </button>
                 </div>
               </div>
             </div>
@@ -197,36 +231,49 @@
             SHARE modal
           -->
         <div x-show="showShareModal" x-transition.opacity.duration.600ms style="display: none;"
-          class="fixed inset-0 z-30 flex items-center justify-center overflow-auto bg-red-900 bg-opacity-60">
+          class="fixed inset-0 z-30 flex items-center justify-center overflow-auto bg-slate-900 bg-opacity-75 backdrop-blur-sm">
           <!-- modal inner -->
           <div x-show="showShareModal" x-transition.opacity.duration.600ms
-            class="w-4/5 sm:w-2/3 p-6 mx-4 text-left bg-white rounded shadow-lg" @click.away="showShareModal = false">
+            class="w-4/5 sm:w-2/3 md:w-1/2 p-8 mx-auto text-center bg-white rounded-xl shadow-2xl border-4"
+            :class="isWinner ? 'border-emerald-400' : 'border-slate-300'" @click.away="showShareModal = false">
             <!-- Title / Close-->
-            <div class="flex items-start justify-between">
-              <h5 class="mr-3 mb-2 md: md-4 text-red-900 max-w-none text-2xl font-bold">Game Result</h5>
-              <button type="button" class="z-50 text-2xl font-bold text-red-900 cursor-pointer"
+            <div class="flex items-start justify-between absolute right-4 top-4">
+              <button type="button" class="text-2xl font-bold text-slate-400 hover:text-slate-600 cursor-pointer"
                 @click="showShareModal = false">&times;</button>
             </div>
 
             <!-- content -->
-            <div class="text-red-900">
+            <div class="text-slate-900 mt-2">
               <div>
                 <template x-if="isWinner">
-                  <div class="text-md"><span x-text="kudos[numGuesses]"></span></div>
+                  <div class="mb-4">
+                    <h2 class="text-3xl font-bold text-emerald-500 mb-2">You Won!</h2>
+                    <div class="text-lg font-medium text-slate-600"><span x-text="kudos[numGuesses]"></span></div>
+                  </div>
                 </template>
                 <template x-if="isLoser">
-                  <div class="text-md"><span>Almost had it! The word was <span x-text="answer"></span>.</span></div>
+                  <div class="mb-4">
+                    <h2 class="text-3xl font-bold text-slate-400 mb-2">Game Over</h2>
+                    <div class="text-lg text-slate-600">The word was <span class="font-bold text-slate-900"
+                        x-text="answer"></span>.</div>
+                  </div>
                 </template>
-                <div class="my-2">
-                  <pre class="text-xs" x-text="shareBlurb"></pre>
+
+                <div class="my-6 p-4 bg-slate-50 rounded-lg inline-block shadow-inner">
+                  <pre class="text-xs md:text-sm font-mono leading-tight tracking-widest" x-text="shareBlurb"></pre>
                 </div>
-                <div class="mt-4">
+
+                <div class="mt-6 flex justify-center gap-3">
                   <button @click="showShareModal = false; showNewGameModal = true"
-                    class="hover:bg-red-300 py-1 px-3 inline-block text-xs md:text-sm text-red-800 bg-red-200 rounded shadow-md">New
-                    Game</button>
-                  <button x-show="dailyChallenge" x-ref="shareButton" @click="shareGame"
-                    class="ml-2 py-1 px-3 inline-block text-xs md:text-sm text-gray-50 bg-red-400 rounded shadow-md">Share
-                    your score!</button>
+                    class="hover:bg-indigo-100 hover:text-indigo-800 transition-colors py-2 px-6 text-sm font-bold text-indigo-600 bg-white border-2 border-indigo-100 rounded-lg">
+                    New Game
+                  </button>
+                  <div title="Share your score">
+                    <button x-ref="shareButton" @click="shareGame"
+                      class="py-2 px-6 text-sm font-bold text-white bg-indigo-500 hover:bg-indigo-600 rounded-lg shadow-md transition-all hover:-translate-y-0.5">
+                      Share Score
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -239,31 +286,51 @@
             STATS modal
           -->
         <div x-show="showStatsModal" x-transition.opacity.duration.600ms style="display: none;"
-          class="fixed inset-0 z-30 flex items-center justify-center overflow-auto bg-red-900 bg-opacity-60">
+          class="fixed inset-0 z-30 flex items-center justify-center overflow-auto bg-slate-900 bg-opacity-75 backdrop-blur-sm">
           <!-- modal inner -->
           <div x-show="showStatsModal" x-transition.opacity.duration.600ms
-            class="w-3/5 sm:w-2/5 md:w-1/3 lg:w-1/4 max-w-4/5 p-6 mx-auto text-left bg-white rounded shadow-lg"
+            class="w-3/5 sm:w-2/5 md:w-1/3 lg:w-1/4 max-w-4/5 p-6 mx-auto text-left bg-white rounded-xl shadow-2xl"
             @click.away="showStatsModal = false">
             <!-- Title / Close-->
-            <div class="flex items-start justify-between">
-              <h5 class="mr-3 mb-2 text-red-900 max-w-none text-2xl font-bold">WordLetta Stats</h5>
-              <button type="button" class="z-50 text-2xl font-bold text-red-900 cursor-pointer"
+            <div class="flex items-start justify-between mb-4 border-b border-slate-100 pb-2">
+              <h5 class="mr-3 text-slate-800 max-w-none text-xl font-bold">Your Stats</h5>
+              <button type="button" class="text-2xl font-bold text-slate-400 hover:text-slate-600 cursor-pointer"
                 @click="showStatsModal = false">&times;</button>
             </div>
 
             <!-- content -->
-            <div class="text-red-900">
-              <div>Games played: <span x-text="userGames"></span></div>
-              <div>
-                <span x-text="userWins"></span> Win<span x-text="userWins !== 1 ? 's' : ''"></span> /
-                <span x-text="userLosses"></span> Loss<span x-text="userLosses !== 1 ? 'es' : ''"></span>
-                <template x-if="userWins || userLosses">
-                  <span>(<span x-text="userWinPct"></span>%)</span>
-                </template>
+            <div class="text-slate-700">
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-sm font-medium text-slate-500">Games Played</span>
+                <span class="text-xl font-bold text-slate-900" x-text="userGames"></span>
               </div>
-              <div class="mt-4">
+
+              <div class="grid grid-cols-2 gap-3 my-4">
+                <div class="bg-emerald-50 p-2 rounded text-center">
+                  <div class="text-2xl font-bold text-emerald-600" x-text="userWins"></div>
+                  <div class="text-xs font-bold text-emerald-800 uppercase">Wins</div>
+                </div>
+                <div class="bg-rose-50 p-2 rounded text-center">
+                  <div class="text-2xl font-bold text-rose-600" x-text="userLosses"></div>
+                  <div class="text-xs font-bold text-rose-800 uppercase">Losses</div>
+                </div>
+              </div>
+
+              <div class="text-center mb-6">
+                <div class="text-sm text-slate-500">Win Percentage</div>
+                <div class="text-3xl font-black text-indigo-600">
+                  <template x-if="userWins || userLosses">
+                    <span><span x-text="userWinPct"></span>%</span>
+                  </template>
+                  <template x-if="!userWins && !userLosses">
+                    <span>0%</span>
+                  </template>
+                </div>
+              </div>
+
+              <div class="mt-6 border-t border-slate-100 pt-4 flex justify-between items-center">
                 <button @click="confirm('This will reset all personal stats.\n\nAre you sure?') ? resetStats : ''"
-                  class="py-1 px-3 inline-block text-xs text-red-800 bg-red-200 rounded shadow-md">Reset Stats</button>
+                  class="text-xs text-rose-500 hover:text-rose-700 hover:underline">Reset Stats</button>
               </div>
             </div>
           </div>
@@ -272,12 +339,26 @@
       </div><!-- /board -->
     </main>
 
-    <footer class="flex justify-between p-1 text-xs bg-gradient-to-r from-red-200 to-red-400">
-      <div>WordLetta v<span x-text="version"></span> by <a class="text-indigo-600 font-bold"
-          href="https://twitter.com/seanodotcom" target="_blank">@seanodotcom</a></div>
-      <div x-show="endlessStats.length"><span class="cursor-pointer" @click="showStatsModal = true">📊 my stats</span>
+    <footer
+      class="fixed bottom-0 w-full flex justify-between items-center p-3 text-xs bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-slate-400 border-t-4 border-rose-500 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-20">
+      <div class="flex gap-4 items-center">
+        <div class="font-bold text-slate-200 text-sm tracking-wide font-['Ramabhadra']">WORDLETTA <span
+            class="text-slate-500 font-normal font-sans">v<span x-text="version" class="text-[10px]"></span></span>
+        </div>
       </div>
-      <div class="font-bold text-gray-50"><span x-text="numGuesses"></span> / <span x-text="totalGuesses"></span></div>
+
+      <!-- New Game Button moved to footer -->
+      <button @click="showNewGameModal = true"
+        class="py-1 px-4 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 rounded-full shadow-lg transition-all hover:scale-105 active:scale-95">
+        New Game
+      </button>
+
+      <div class="flex gap-4 items-center">
+        <div x-show="endlessStats.length"><span class="cursor-pointer hover:text-white transition-colors"
+            @click="showStatsModal = true">📊 stats</span></div>
+        <div class="font-bold text-slate-200 bg-slate-800 px-2 py-1 rounded"><span x-text="numGuesses"></span> / <span
+            x-text="totalGuesses"></span></div>
+      </div>
     </footer>
   </div>
 </body>
