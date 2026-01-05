@@ -1,0 +1,1 @@
+["ab", "ad", "ah", "am", "an", "as", "at", "aw", "ax", "ay", "be", "bi", "by", "do", "eh", "ex", "gi", "go", "ha", "he", "hi", "hm", "ho", "id", "if", "in", "is", "it", "ma", "me", "my", "no", "of", "oh", "ok", "on", "or", "ow", "ox", "oy", "pa", "pi", "qi", "so", "to", "uh", "um", "up", "us", "we", "ye", "yo", "za"]

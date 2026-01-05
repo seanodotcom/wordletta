@@ -1,0 +1,20 @@
+{
+  "name": "wordletapp",
+  "version": "1.0.2",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^2.7.2"
+  },
+  "dependencies": {
+    "@alpinejs/persist": "^3.8.1",
+    "alpinejs": "^3.8.1",
+    "autoprefixer": "^10.4.2",
+    "clipboard-polyfill": "^3.0.3",
+    "postcss": "^8.4.5",
+    "tailwindcss": "^3.0.16"
+  }
+}
