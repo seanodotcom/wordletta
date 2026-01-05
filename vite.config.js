@@ -1,9 +1,9 @@
 export default {
-    base: '/word/',
-    // assetsInclude: ['**/words/*.*'],
-    build: {
-      rollupOptions: {
-        // https://rollupjs.org/guide/en/#big-list-of-options
-      }
+  base: './',
+  // assetsInclude: ['**/words/*.*'],
+  build: {
+    rollupOptions: {
+      // https://rollupjs.org/guide/en/#big-list-of-options
     }
+  }
 }
