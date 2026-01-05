@@ -1,9 +1,13 @@
 import * as clipboard from "clipboard-polyfill/text";
+import { auth, db } from "./src/firebaseConfig";
+import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc, setDoc, updateDoc, arrayUnion } from "firebase/firestore";
 
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '1.02',
+    version: '1.1',
+    user: null,
     wordLength: 6,
     totalGuesses: 6,
     correctLetters: 0,
@@ -37,8 +41,11 @@ export default () => ({
         "A tricky one, but you pulled it out in 5!",
         "Just got it on your last try!",
     ],
-    endlessStats: Alpine.$persist([]),
-    dailyStats: Alpine.$persist([]),
+    endlessStats: [], // Removed Alpine.$persist to rely on Firestore/Local merge logic manually if needed, or keeping it for offline support? 
+    // actually keeping it simple: use local unless logged in.
+    // For now, let's keep it as array and init in init()
+    dailyStats: Alpine.$persist([]), // Keep daily local for now
+
     get shareBlurb() {
         // build 'colored dots' grid for sharing right/wrong guesses
         if (!this.numGuesses) return
@@ -85,30 +92,52 @@ export default () => ({
         }
         else if (this.hardMode) {
             let response = await fetch(hardUrl)
-            this.wordList = await response.json()            
+            this.wordList = await response.json()
         }
         response = null
     },
     async init() {
+        this.startTime = new Date();
+        // auth check
+        if (auth) {
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    this.user = user;
+                    this.syncStats();
+                } else {
+                    this.user = null;
+                    // retrieve local stats if not logged in? 
+                    // leveraging Alpine.$persist would need to be manual here if we removed it from the property def
+                    // Let's restore from localStorage manually if needed:
+                    const local = localStorage.getItem('_x_endlessStats');
+                    if (local) this.endlessStats = JSON.parse(local);
+                }
+            });
+        } else {
+            console.log("Firebase Auth not initialized (dev mode)");
+            const local = localStorage.getItem('_x_endlessStats');
+            if (local) this.endlessStats = JSON.parse(local);
+        }
+
         // daily challenge complete?
         if (this.dailyStats[this.dailyChallengeDay]) this.dailyChallengeComplete = true
 
         // init letter boxes (reset on wordLength change) & alphabet status
         this.letters = []
         this.boxStatus = []
-        
-        this.$watch('wordLength', len => { 
+
+        this.$watch('wordLength', len => {
             this.letters.length = len
             this.boxStatus.length = len
             for (let i = 0; i < len; i++) {
-                this.letters[i] = '' 
-                this.boxStatus[i] = '' 
+                this.letters[i] = ''
+                this.boxStatus[i] = ''
             }
         })
 
         for (let i = 0; i < this.wordLength; i++) {
-            this.letters[i] = '' 
-            this.boxStatus[i] = '' 
+            this.letters[i] = ''
+            this.boxStatus[i] = ''
         }
 
         this.alphabetStatus = []
@@ -137,7 +166,7 @@ export default () => ({
         this.isWinner = false
         this.isLoser = false
     },
-    keyPressed(){
+    keyPressed() {
         // handle keyboard events
         const k = this.$event.key
 
@@ -148,7 +177,7 @@ export default () => ({
             this.showStatsModal = false
             this.showNewGameModal = false
         }
-        
+
         // only respond to letters A-Z
         if ((/^[a-z]$/i).test(k)) {
             this.letterClicked(k.toUpperCase())
@@ -188,7 +217,7 @@ export default () => ({
             }
         });
         // console.log(answerClone)
-        
+
         this.letters.forEach((g, index) => {
             // 2. look for right letter, wrong position
             if (g) {  // make sure there's a letter!
@@ -202,13 +231,13 @@ export default () => ({
                 }
             }
         })
-        
+
         // set boxStatus & copy to guessStatus (0-wrong, 1-right/wrong, 2-right/right)
         this.letters.forEach((g, index) => {
             if (!this.boxStatus[index]) this.boxStatus[index] = 0
             if (this.alphabetStatus[this.alphabet.indexOf(g)] == '') this.alphabetStatus[this.alphabet.indexOf(g)] = 0
             this.guessStatus[this.numGuesses] += (this.boxStatus[index]) ? this.boxStatus[index] : '0'
-        }) 
+        })
 
         // push latest guess
         this.guesses.push(this.letters.join(''))
@@ -321,17 +350,74 @@ export default () => ({
             // console.log('Sharing is not supported on this browser, do it the old way.');
         }
     },
-    logStats() {
-        let statsObj = { "timestamp": new Date().toISOString(), "isWinner": this.isWinner, "numGuesses": this.numGuesses, "wordLength": this.wordLength, "hardMode": this.hardMode, "answer": this.answer }
+    async logStats() {
+        const duration = this.startTime ? Math.round((new Date() - this.startTime) / 1000) : 0;
+        let statsObj = {
+            "timestamp": new Date().toISOString(),
+            "isWinner": this.isWinner,
+            "numGuesses": this.numGuesses,
+            "wordLength": this.wordLength,
+            "hardMode": this.hardMode,
+            "answer": this.answer,
+            "guesses": this.guesses,
+            "duration": duration
+        }
         if (this.dailyChallenge) {
             this.dailyStats[this.dailyChallengeDay] = statsObj
             this.dailyChallengeComplete = true
         }
         this.endlessStats.push(statsObj)
+
+        if (this.user) {
+            try {
+                const userRef = doc(db, "users", this.user.uid);
+                await updateDoc(userRef, {
+                    history: arrayUnion(statsObj)
+                });
+            } catch (e) {
+                console.error("Error syncing stats", e);
+            }
+        }
+    },
+    async login() {
+        const provider = new GoogleAuthProvider();
+        try {
+            const result = await signInWithPopup(auth, provider);
+            this.user = result.user;
+            // console.log("Logged in", this.user);
+            await this.syncStats();
+        } catch (error) {
+            console.error("Login failed", error);
+        }
+    },
+    logout() {
+        signOut(auth).then(() => {
+            this.user = null;
+            this.endlessStats = []; // clear stats on logout? or keep local? 
+            // for strict privacy, clear. for UX, maybe keep. Let's clear to show distinct states.
+        });
+    },
+    async syncStats() {
+        if (!this.user || !db) return;
+        const userRef = doc(db, "users", this.user.uid);
+        const docSnap = await getDoc(userRef);
+
+        if (docSnap.exists()) {
+            // Load cloud stats
+            const data = docSnap.data();
+            this.endlessStats = data.history || [];
+        } else {
+            // New user doc
+            await setDoc(userRef, {
+                email: this.user.email,
+                history: this.endlessStats // push any local stats? 
+            });
+        }
     },
     resetStats() {
         this.endlessStats = []
         this.dailyStats = []
         this.dailyChallengeComplete = false
     }
+
 })

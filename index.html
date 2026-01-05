@@ -1,316 +1,285 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <!-- 
+
+<head>
+  <!-- 
       GTM removed to fix build error
     -->
 
-    <meta charset="UTF-8" />
-    <script type="module" src="./main.js"></script>
-    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <style>
-      #app { display: none; }
-    </style>
-    <title>WordLetta</title>
-  </head>
-  
-  <body class="">
-    <noscript>WordLetta requires JavaScript to run.</noscript>
-    <div
-      id="app"
-      x-data="wordletApp()"
-      class="flex flex-col min-h-screen w-screen bg-red-100"
-      @keyup.window="keyPressed()"
-    >
-      <header
-        :class="(isWinner || isLoser) ? 'bg-gradient-to-r from-blue-400 to-blue-600' : 'bg-blue-300'"
-        class="flex-grow overflow-hidden w-screen p-2 md:p-3 lg:p-4 xl:p-6 transition-colors duration-1000"
-      >
-        <div class="flex gap-2 justify-between">
-          <div
-            class="text-lg md:text-xl lg:text-3xl font-serif font-bold text-red-800 drop-shadow-lg"
-          >Word<span class="italic">Letta</span></div>
-          <button
-            @click="showNewGameModal = true"
-            class="py-0 px-2 inline-block text-xs lg:text-lg text-blue-800 rounded shadow-blue-500"
-            :class="(isWinner || isLoser) ? 'bg-yellow-300 hover:bg-yellow-400 font-bold shadow-lg animate-bounce' : 'bg-blue-200 hover:bg-blue-100 shadow-sm'"
-          >New Game</button>
-        </div>
-      </header>
-      
-      <main class="flex flex-auto">
-        <div class="board p-2 lg:p-3 w-screen bg-gradient-to-b from-red-200 to-red-100">
-          
-          <!-- boxes -->
-          <!-- <div class="flex justify-center items-center row guess py-2 gap-3 lg:gap-6 xl:gap-8 border-0"> -->
-          <div class="flex justify-center items-center row guess py-1 md:py-2 gap-1 sm:gap-2 lg:gap-6 xl:gap-8 border-0">
-            <template x-for="w, i in wordLength" :key="i">
-              <div
-                class="flex letter justify-center items-center overflow-hidden bg-gradient-to-b from-gray-50 to-red-100 focus:outline-none max-w-48 border border-red-800 text-red-800 rounded-md"
-                :class="{
+  <meta charset="UTF-8" />
+  <script type="module" src="./main.js"></script>
+  <link rel="icon" type="image/png" href="/logo.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    #app {
+      display: none;
+    }
+  </style>
+  <title>WordLetta</title>
+</head>
+
+<body class="">
+  <noscript>WordLetta requires JavaScript to run.</noscript>
+  <div id="app" x-data="wordletApp()" class="flex flex-col min-h-screen w-screen bg-red-100"
+    @keyup.window="keyPressed()">
+    <header :class="(isWinner || isLoser) ? 'bg-gradient-to-r from-blue-400 to-blue-600' : 'bg-blue-300'"
+      class="flex-grow overflow-hidden w-screen p-1 md:p-3 lg:p-4 xl:p-6 transition-colors duration-1000">
+      <div class="flex gap-2 justify-between items-center">
+        <img src="/logo.png" alt="WordLetta" class="h-8 md:h-14 lg:h-20 drop-shadow-md" />
+        <button @click="showNewGameModal = true"
+          class="py-0 px-2 inline-block text-xs lg:text-lg text-blue-800 rounded shadow-blue-500"
+          :class="(isWinner || isLoser) ? 'bg-yellow-300 hover:bg-yellow-400 font-bold shadow-lg animate-bounce' : 'bg-blue-200 hover:bg-blue-100 shadow-sm'">New
+          Game</button>
+      </div>
+    </header>
+
+    <main class="flex flex-auto">
+      <div class="board p-1 lg:p-3 w-screen bg-gradient-to-b from-red-200 to-red-100">
+
+        <!-- boxes -->
+        <!-- <div class="flex justify-center items-center row guess py-2 gap-3 lg:gap-6 xl:gap-8 border-0"> -->
+        <div class="flex justify-center items-center row guess py-1 md:py-2 gap-1 sm:gap-2 lg:gap-6 xl:gap-8 border-0">
+          <template x-for="w, i in wordLength" :key="i">
+            <div
+              class="flex letter justify-center items-center overflow-hidden bg-gradient-to-b from-gray-50 to-red-100 focus:outline-none max-w-48 border border-red-800 text-red-800 rounded-md"
+              :class="{
                   'filled' : letters[i],
                   'winner' : isWinner,
                   'opacity-50' : (isWinner || isLoser)
-                }"
-              >
+                }">
               <!-- class="inline-block font-bold text-6xl lg:text-8xl text-center text-red-800 h-20 md:h-40 md:w-32 xl:w-48 p-1" -->
-                <input
-                  x-ref="box"
-                  :rel="i"
-                  x-model="letters[i]"
-                  maxlength="1"
-                  class="inline-block font-bold text-3xl sm:text-4xl md:text-6xl lg:text-8xl text-center text-red-800 h-20 md:h-40 w-20 md:w-32 xl:w-48 lg:p-1"
-                  :class="{
+              <input x-ref="box" :rel="i" x-model="letters[i]" maxlength="1"
+                class="inline-block font-bold text-3xl sm:text-4xl md:text-6xl lg:text-8xl text-center text-red-800 h-14 w-14 sm:h-20 sm:w-20 md:h-24 md:w-24 lg:h-40 lg:w-48 lg:p-1"
+                :class="{
                     'bg-amber-400': boxStatus[i] == 1,
                     'bg-emerald-400': boxStatus[i] == 2
-                  }"
-                  type="text"
-                  disabled="disabled"
-                />
-              </div>
-            </template>
-          </div>
-          
-          <!-- keyboard -->
-          <div
-            :class="(isWinner || isLoser) ? 'opacity-40' : ''"
-            class="flex justify-center flex-wrap w-full border-0 gap-2 my-2"
-          >
-            <template x-for="letter, i in alphabet" :key="i">
-              <div
-                x-ref="i"
-                x-text="letter"
-                class="noselect cursor-pointer overflow-none p-1 w-12 h-auto mr-1 mb-1 text-sm text-center text-red-800 hover:bg-blue-200 rounded-md"
-                :class="{
+                  }" type="text" disabled="disabled" />
+            </div>
+          </template>
+        </div>
+
+        <!-- keyboard -->
+        <div :class="(isWinner || isLoser) ? 'opacity-40' : ''"
+          class="flex justify-center flex-wrap w-full border-0 gap-2 my-2">
+          <template x-for="letter, i in alphabet" :key="i">
+            <div x-ref="i" x-text="letter"
+              class="noselect cursor-pointer overflow-none p-1 w-12 h-auto mr-1 mb-1 text-sm text-center text-red-800 hover:bg-blue-200 rounded-md"
+              :class="{
                   'bg-red-200': alphabetStatus[i] === '',
                   'bg-red-500': alphabetStatus[i] === 0,
                   'bg-amber-300': alphabetStatus[i] == 1,
                   'bg-emerald-300': alphabetStatus[i] == 2
-                }"
-                @click="letterClicked(letter)"
-              ></div>
-            </template>
-            <!-- Backspace / Enter -->
+                }" @click="letterClicked(letter)"></div>
+          </template>
+          <!-- Backspace / Enter -->
+          <div @click="backspace" :class="cursor == 0 ? 'opacity-30' : ''"
+            class="noselect cursor-pointer overflow-none align-middle text-center text-sm bg-gradient-to-r from-red-300 to-red-400 text-red-900 hover:bg-blue-200 rounded-md px-1 w-12 ml-1 flex items-center justify-center">
+            ⌫</div>
+          <div @click="enter" :class="!isReadyToCheck ? 'opacity-30' : 'animate-bounce'"
+            class="noselect cursor-pointer overflow-none align-middle text-center text-sm bg-gradient-to-r from-red-300 to-red-400 text-red-900 hover:bg-blue-200 rounded-md p-1 w-16 mx-2 font-bold disabled:opacity-40 flex items-center justify-center">
+            ENTER</div>
+        </div>
+
+        <!-- guesses -->
+        <div :class="{'bg-green-100' : isWinner, 'bg-yellow-100' : isLoser}"
+          class="flex flex-wrap justify-start items-center min-h-18 my-4 p-1 lg:p-3 gap-1 lg:gap-3 border border-red-800 overflow-none">
+          <template x-for="guess, guessIndex in guesses" :key="guessIndex">
             <div
-              @click="backspace"
-              :class="cursor == 0 ? 'opacity-30' : ''"
-              class="noselect cursor-pointer overflow-none align-middle text-center text-sm bg-gradient-to-r from-red-300 to-red-400 text-red-900 hover:bg-blue-200 rounded-md px-1 w-12 ml-1 flex items-center justify-center"
-            >⌫</div>
-            <div
-              @click="enter"
-              :class="!isReadyToCheck ? 'opacity-30' : 'animate-bounce'"
-              class="noselect cursor-pointer overflow-none align-middle text-center text-sm bg-gradient-to-r from-red-300 to-red-400 text-red-900 hover:bg-blue-200 rounded-md p-1 w-16 mx-2 font-bold disabled:opacity-40 flex items-center justify-center"
-            >ENTER</div>
-          </div>
-          
-          <!-- guesses -->
-          <div
-            :class="{'bg-green-100' : isWinner, 'bg-yellow-100' : isLoser}"
-            class="flex flex-wrap justify-start items-center min-h-18 my-4 p-1 lg:p-3 gap-1 lg:gap-3 border border-red-800 overflow-none"
-          >
-            <template x-for="guess, guessIndex in guesses" :key="guessIndex">
-              <div class="flex text-blue-800 border-1 border-blue-800 mr-1 md:mr-4 lg:mr-4 tracking-tight md:tracking-normal text-sm md:text-lg lg:text-xl">
-                <template x-for="guessLet, guessLetterIndex in guess" :key="guessLet + guessLetterIndex">
-                  <template x-if="guessStatus[guessIndex]">
-                      <span
-                        x-text="guessLet"
-                        :class="{
+              class="flex text-blue-800 border-1 border-blue-800 mr-1 md:mr-4 lg:mr-4 tracking-tight md:tracking-normal text-sm md:text-lg lg:text-xl">
+              <template x-for="guessLet, guessLetterIndex in guess" :key="guessLet + guessLetterIndex">
+                <template x-if="guessStatus[guessIndex]">
+                  <span x-text="guessLet" :class="{
                           'bg-yellow-300' : guessStatus[guessIndex] && guessStatus[guessIndex][guessLetterIndex] == '1',
                           'bg-green-300' : guessStatus[guessIndex] && guessStatus[guessIndex][guessLetterIndex] == '2'
-                        }"
-                      ></span>
-                  </template>
-                    
+                        }"></span>
                 </template>
-              </div>
-            </template>
-          </div>
-          
-          <!-- DEBUG -->
-          <div id="debug" class="text-xs">
-            <!--<pre x-text="JSON.stringify(boxStatus, null, 2)"></pre>-->
-          </div>
 
-          
-          <!--
+              </template>
+            </div>
+          </template>
+        </div>
+
+        <!-- DEBUG -->
+        <div id="debug" class="text-xs">
+          <!--<pre x-text="JSON.stringify(boxStatus, null, 2)"></pre>-->
+        </div>
+
+
+        <!--
             NEW GAME modal
           -->
-          <div
-            x-show="showNewGameModal"
-            x-transition.opacity.duration.600ms
-            style="display: none;"
-            class="fixed inset-0 z-30 flex items-center justify-center overflow-auto bg-red-900 bg-opacity-60"
-          >
-            <!-- modal inner -->
-            <div
-                x-show="showNewGameModal"
-                x-transition.duration.600ms
-                class="w-4/5 md:w-1/2 lg:w-2/5 p-6 mx-auto bg-white rounded shadow-lg"
-                @click.away="showNewGameModal = false"
-            >
-                <!-- Title / Close-->
-                <div class="flex items-start justify-between">
-                    <h5 class="mr-3 mb-4 text-red-900 max-w-none text-2xl font-bold">New WordLetta</h5>
-                    <button type="button" class="z-50 text-2xl font-bold text-red-900 cursor-pointer" @click="showNewGameModal = false">&times;</button>
-                </div>
+        <div x-show="showNewGameModal" x-transition.opacity.duration.600ms style="display: none;"
+          class="fixed inset-0 z-30 flex items-center justify-center overflow-auto bg-red-900 bg-opacity-60">
+          <!-- modal inner -->
+          <div x-show="showNewGameModal" x-transition.duration.600ms
+            class="w-4/5 md:w-1/2 lg:w-2/5 p-6 mx-auto bg-white rounded shadow-lg"
+            @click.away="showNewGameModal = false">
+            <!-- Title / Close-->
+            <div class="flex items-start justify-between">
+              <h5 class="mr-3 mb-4 text-red-900 max-w-none text-2xl font-bold">New WordLetta</h5>
+              <button type="button" class="z-50 text-2xl font-bold text-red-900 cursor-pointer"
+                @click="showNewGameModal = false">&times;</button>
+            </div>
 
-                <!-- content -->
-                <!-- <div class="grid grid-cols-1 md:grid-cols-2 content-center bg-red-100 gap-4 md:divide-x-2 md:divide-red-200 text-red-900"> -->
-                <div class="grid grid-cols-1 place-items-center gap-3 divide-y-2 divide-red-200 text-red-900">
-
-                  <!-- daily challenge -->
-                  <div class="">
-                    <template x-if="!dailyChallengeComplete">
-                      <button
-                        @click="dailyChallenge = true; newGame()"
-                        class="hover:bg-orange-300 my-3 py-1 px-3 inline-block text-center text-md lg:text-lg text-orange-700 bg-orange-200 rounded shadow-md"
-                      >Play Today's Challenge!</button>
-                    </template>
-                    <template x-if="dailyChallengeComplete"><span class="text-sm">Challenge Complete. See you tomorrow!</span></template>
+            <!-- Login / Profile -->
+            <div class="mb-4 flex justify-between items-center bg-red-50 p-2 rounded">
+              <template x-if="!user">
+                <button @click="login" class="flex items-center gap-2 text-sm font-bold text-blue-700 hover:underline">
+                  <span>Login to sync stats</span>
+                </button>
+              </template>
+              <template x-if="user">
+                <div class="flex justify-between w-full items-center">
+                  <div class="flex items-center gap-2">
+                    <img :src="user.photoURL" class="w-8 h-8 rounded-full border border-red-300">
+                    <span class="text-sm text-red-900" x-text="user.displayName"></span>
                   </div>
-                  
-                  <!-- # of letters -->
-                  <div class="mt-3 pl-0">
-                    <h3 class="text-lg md:text-xl my-1 text-orange-500">∞ Endless Mode</h3>
-                    <div class="mt-1 text-xs md:text-lg lg:text-xl">
-                      <template x-for="i in 10">
-                        <button
-                        class="px-2 py-1 text-gray-100 text-xs"
-                        :class="{
+                  <button @click="logout" class="text-xs text-red-500 hover:underline">Logout</button>
+                </div>
+              </template>
+            </div>
+
+            <!-- content -->
+            <!-- <div class="grid grid-cols-1 md:grid-cols-2 content-center bg-red-100 gap-4 md:divide-x-2 md:divide-red-200 text-red-900"> -->
+            <div class="grid grid-cols-1 place-items-center gap-3 divide-y-2 divide-red-200 text-red-900">
+
+              <!-- daily challenge -->
+              <div class="">
+                <template x-if="!dailyChallengeComplete">
+                  <button @click="dailyChallenge = true; newGame()"
+                    class="hover:bg-orange-300 my-3 py-1 px-3 inline-block text-center text-md lg:text-lg text-orange-700 bg-orange-200 rounded shadow-md">Play
+                    Today's Challenge!</button>
+                </template>
+                <template x-if="dailyChallengeComplete"><span class="text-sm">Challenge Complete. See you
+                    tomorrow!</span></template>
+              </div>
+
+              <!-- # of letters -->
+              <div class="mt-3 pl-0">
+                <h3 class="text-lg md:text-xl my-1 text-orange-500">∞ Endless Mode</h3>
+                <div class="mt-1 text-xs md:text-lg lg:text-xl">
+                  <template x-for="i in 10">
+                    <button class="px-2 py-1 text-gray-100 text-xs" :class="{
                             'bg-red-500' : wordLength == i,
                             'bg-red-800' : wordLength !== i,
                             'rounded-l-lg' : i == 1,
                             'rounded-r-lg' : i == 10
-                          }"
-                        @click="wordLength = i; (wordLength > 6) ? hardMode = true : null"
-                        x-text="i"></button>
-                      </template> <span class="ml-1">LETTER<span x-text="wordLength > 1 ? 'S' : ''"></span></span>
+                          }" @click="wordLength = i; (wordLength > 6) ? hardMode = true : null" x-text="i"></button>
+                  </template> <span class="ml-1">LETTER<span x-text="wordLength > 1 ? 'S' : ''"></span></span>
+                </div>
+
+                <!-- Hard Mode Switch - force on high-letter, uncurated lists -->
+                <div class="mt-4">
+                  <div class="flex flex-row cursor-pointer" :class="wordLength > 6 ? 'opacity-40' : ''"
+                    @click="(wordLength <= 6) ? hardMode = !hardMode : null">
+                    <div class="w-10 h-6 flex items-center bg-gray-300 rounded-full p-1 ml-1 duration-300 ease-in-out"
+                      :class="{'bg-red-600': hardMode}">
+                      <div class="bg-red-100 w-4 h-3 rounded-full shadow-md transform duration-300 ease-in-out"
+                        :class="{'translate-x-4': hardMode}"></div>
                     </div>
-                    
-                    <!-- Hard Mode Switch - force on high-letter, uncurated lists -->
-                    <div class="mt-4">
-                      <div
-                        class="flex flex-row cursor-pointer"
-                        :class="wordLength > 6 ? 'opacity-40' : ''"
-                        @click="(wordLength <= 6) ? hardMode = !hardMode : null"
-                        >
-                        <div class="w-10 h-6 flex items-center bg-gray-300 rounded-full p-1 ml-1 duration-300 ease-in-out" :class="{'bg-red-600': hardMode}">
-                          <div class="bg-red-100 w-4 h-3 rounded-full shadow-md transform duration-300 ease-in-out" :class="{'translate-x-4': hardMode}"></div>
-                        </div>
-                        <span class="text-sm ml-2 inline-block" :class="hardMode ? 'font-bold' : ''" title="Includes words you've never heard of. Let's get nuts!">LUDICROUS MODE</span>
-                      </div>
-                    </div>
-                    
-                    <div class="grid place-items-center">
-                      <button
-                      @click="newGame"
-                      class="hover:bg-red-300 mt-6 py-1 px-3 inline-block text-center text-md text-red-800 bg-red-200 rounded shadow-md"
-                      >Play Endless Mode</button>
-                    </div>
+                    <span class="text-sm ml-2 inline-block" :class="hardMode ? 'font-bold' : ''"
+                      title="Includes words you've never heard of. Let's get nuts!">LUDICROUS MODE</span>
                   </div>
                 </div>
+
+                <div class="grid place-items-center">
+                  <button @click="newGame"
+                    class="hover:bg-red-300 mt-6 py-1 px-3 inline-block text-center text-md text-red-800 bg-red-200 rounded shadow-md">Play
+                    Endless Mode</button>
+                </div>
+              </div>
             </div>
           </div>
+        </div>
 
 
-          <!--
+        <!--
             SHARE modal
           -->
-          <div
-            x-show="showShareModal"
-            x-transition.opacity.duration.600ms
-            style="display: none;"
-            class="fixed inset-0 z-30 flex items-center justify-center overflow-auto bg-red-900 bg-opacity-60"
-          >
-            <!-- modal inner -->
-            <div
-                x-show="showShareModal"
-                x-transition.opacity.duration.600ms
-                class="w-4/5 sm:w-2/3 p-6 mx-4 text-left bg-white rounded shadow-lg"
-                @click.away="showShareModal = false"
-            >
-                <!-- Title / Close-->
-                <div class="flex items-start justify-between">
-                    <h5 class="mr-3 mb-2 md: md-4 text-red-900 max-w-none text-2xl font-bold">Game Result</h5>
-                    <button type="button" class="z-50 text-2xl font-bold text-red-900 cursor-pointer" @click="showShareModal = false">&times;</button>
-                </div>
-
-                <!-- content -->
-                <div class="text-red-900">
-                  <div>
-                    <template x-if="isWinner"><div class="text-md"><span x-text="kudos[numGuesses]"></span></div></template>
-                    <template x-if="isLoser"><div class="text-md"><span>Almost had it! The word was <span x-text="answer"></span>.</span></div></template>
-                    <div class="my-2"><pre class="text-xs" x-text="shareBlurb"></pre></div>
-                    <div class="mt-4">
-                      <button
-                        @click="showShareModal = false; showNewGameModal = true"
-                        class="hover:bg-red-300 py-1 px-3 inline-block text-xs md:text-sm text-red-800 bg-red-200 rounded shadow-md"
-                      >New Game</button>
-                      <button
-                        x-show="dailyChallenge"
-                        x-ref="shareButton"
-                        @click="shareGame"
-                        class="ml-2 py-1 px-3 inline-block text-xs md:text-sm text-gray-50 bg-red-400 rounded shadow-md"
-                      >Share your score!</button>
-                    </div>
-                  </div>
-
-                </div>
+        <div x-show="showShareModal" x-transition.opacity.duration.600ms style="display: none;"
+          class="fixed inset-0 z-30 flex items-center justify-center overflow-auto bg-red-900 bg-opacity-60">
+          <!-- modal inner -->
+          <div x-show="showShareModal" x-transition.opacity.duration.600ms
+            class="w-4/5 sm:w-2/3 p-6 mx-4 text-left bg-white rounded shadow-lg" @click.away="showShareModal = false">
+            <!-- Title / Close-->
+            <div class="flex items-start justify-between">
+              <h5 class="mr-3 mb-2 md: md-4 text-red-900 max-w-none text-2xl font-bold">Game Result</h5>
+              <button type="button" class="z-50 text-2xl font-bold text-red-900 cursor-pointer"
+                @click="showShareModal = false">&times;</button>
             </div>
+
+            <!-- content -->
+            <div class="text-red-900">
+              <div>
+                <template x-if="isWinner">
+                  <div class="text-md"><span x-text="kudos[numGuesses]"></span></div>
+                </template>
+                <template x-if="isLoser">
+                  <div class="text-md"><span>Almost had it! The word was <span x-text="answer"></span>.</span></div>
+                </template>
+                <div class="my-2">
+                  <pre class="text-xs" x-text="shareBlurb"></pre>
+                </div>
+                <div class="mt-4">
+                  <button @click="showShareModal = false; showNewGameModal = true"
+                    class="hover:bg-red-300 py-1 px-3 inline-block text-xs md:text-sm text-red-800 bg-red-200 rounded shadow-md">New
+                    Game</button>
+                  <button x-show="dailyChallenge" x-ref="shareButton" @click="shareGame"
+                    class="ml-2 py-1 px-3 inline-block text-xs md:text-sm text-gray-50 bg-red-400 rounded shadow-md">Share
+                    your score!</button>
+                </div>
+              </div>
+
+            </div>
+          </div>
         </div>
 
 
-          <!--
+        <!--
             STATS modal
           -->
-          <div
-            x-show="showStatsModal"
-            x-transition.opacity.duration.600ms
-            style="display: none;"
-            class="fixed inset-0 z-30 flex items-center justify-center overflow-auto bg-red-900 bg-opacity-60"
-          >
-            <!-- modal inner -->
-            <div
-                x-show="showStatsModal"
-                x-transition.opacity.duration.600ms
-                class="w-3/5 sm:w-2/5 md:w-1/3 lg:w-1/4 max-w-4/5 p-6 mx-auto text-left bg-white rounded shadow-lg"
-                @click.away="showStatsModal = false"
-            >
-                <!-- Title / Close-->
-                <div class="flex items-start justify-between">
-                    <h5 class="mr-3 mb-2 text-red-900 max-w-none text-2xl font-bold">WordLetta Stats</h5>
-                    <button type="button" class="z-50 text-2xl font-bold text-red-900 cursor-pointer" @click="showStatsModal = false">&times;</button>
-                </div>
-
-                <!-- content -->
-                <div class="text-red-900">
-                  <div>Games played: <span x-text="userGames"></span></div>
-                  <div>
-                    <span x-text="userWins"></span> Win<span x-text="userWins !== 1 ? 's' : ''"></span> / 
-                    <span x-text="userLosses"></span> Loss<span x-text="userLosses !== 1 ? 'es' : ''"></span>
-                    <template x-if="userWins || userLosses">
-                      <span>(<span x-text="userWinPct"></span>%)</span>
-                    </template>
-                  </div>
-                  <div class="mt-4">
-                    <button
-                      @click="confirm('This will reset all personal stats.\n\nAre you sure?') ? resetStats : ''"
-                      class="py-1 px-3 inline-block text-xs text-red-800 bg-red-200 rounded shadow-md"
-                    >Reset Stats</button>
-                  </div>
-                </div>
+        <div x-show="showStatsModal" x-transition.opacity.duration.600ms style="display: none;"
+          class="fixed inset-0 z-30 flex items-center justify-center overflow-auto bg-red-900 bg-opacity-60">
+          <!-- modal inner -->
+          <div x-show="showStatsModal" x-transition.opacity.duration.600ms
+            class="w-3/5 sm:w-2/5 md:w-1/3 lg:w-1/4 max-w-4/5 p-6 mx-auto text-left bg-white rounded shadow-lg"
+            @click.away="showStatsModal = false">
+            <!-- Title / Close-->
+            <div class="flex items-start justify-between">
+              <h5 class="mr-3 mb-2 text-red-900 max-w-none text-2xl font-bold">WordLetta Stats</h5>
+              <button type="button" class="z-50 text-2xl font-bold text-red-900 cursor-pointer"
+                @click="showStatsModal = false">&times;</button>
             </div>
+
+            <!-- content -->
+            <div class="text-red-900">
+              <div>Games played: <span x-text="userGames"></span></div>
+              <div>
+                <span x-text="userWins"></span> Win<span x-text="userWins !== 1 ? 's' : ''"></span> /
+                <span x-text="userLosses"></span> Loss<span x-text="userLosses !== 1 ? 'es' : ''"></span>
+                <template x-if="userWins || userLosses">
+                  <span>(<span x-text="userWinPct"></span>%)</span>
+                </template>
+              </div>
+              <div class="mt-4">
+                <button @click="confirm('This will reset all personal stats.\n\nAre you sure?') ? resetStats : ''"
+                  class="py-1 px-3 inline-block text-xs text-red-800 bg-red-200 rounded shadow-md">Reset Stats</button>
+              </div>
+            </div>
+          </div>
         </div>
-      
-        </div><!-- /board -->
-      </main>
-      
-      <footer class="flex justify-between p-1 text-xs bg-gradient-to-r from-red-200 to-red-400">
-        <div>WordLetta v<span x-text="version"></span> by <a class="text-indigo-600 font-bold" href="https://twitter.com/seanodotcom" target="_blank">@seanodotcom</a></div>
-        <div x-show="endlessStats.length"><span class="cursor-pointer" @click="showStatsModal = true">📊 my stats</span></div>
-        <div class="font-bold text-gray-50"><span x-text="numGuesses"></span> / <span x-text="totalGuesses"></span></div>
-      </footer>
-    </div>
-  </body>
+
+      </div><!-- /board -->
+    </main>
+
+    <footer class="flex justify-between p-1 text-xs bg-gradient-to-r from-red-200 to-red-400">
+      <div>WordLetta v<span x-text="version"></span> by <a class="text-indigo-600 font-bold"
+          href="https://twitter.com/seanodotcom" target="_blank">@seanodotcom</a></div>
+      <div x-show="endlessStats.length"><span class="cursor-pointer" @click="showStatsModal = true">📊 my stats</span>
+      </div>
+      <div class="font-bold text-gray-50"><span x-text="numGuesses"></span> / <span x-text="totalGuesses"></span></div>
+    </footer>
+  </div>
+</body>
+
 </html>
