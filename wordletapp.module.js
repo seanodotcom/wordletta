@@ -6,7 +6,7 @@ import { doc, getDoc, setDoc, updateDoc, arrayUnion } from "firebase/firestore";
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '1.2.5',
+    version: '1.3.0',
     user: null,
     wordLength: 6,
     totalGuesses: 6,
@@ -19,10 +19,36 @@ export default () => ({
     showNewGameModal: true,
     showShareModal: false,
     showStatsModal: false,
+    showSettingsModal: false,
+    showReleaseNotesModal: false,
     dailyChallenge: false,
     dailyChallengeComplete: false,
     answer: null,
-    alphabet: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'],
+    toastMessage: '',
+    showToast: false,
+    settings: {
+        sound: true,
+        keyboardLayout: 'QWERTY'
+    },
+    LAYER_DEFS: {
+        'QWERTY': [
+            ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+            ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+            ['Z', 'X', 'C', 'V', 'B', 'N', 'M']
+        ],
+        'DVORAK': [
+            ['P', 'Y', 'F', 'G', 'C', 'R', 'L'],
+            ['A', 'O', 'E', 'U', 'I', 'D', 'H', 'T', 'N', 'S'],
+            ['Q', 'J', 'K', 'X', 'B', 'M', 'W', 'V', 'Z']
+        ],
+        'ALPHA': [
+            ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'],
+            ['J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R'],
+            ['S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+        ]
+    },
+    alphabet: [],
+    keyboardRows: [],
     alphabetStatus: [],
     guessStatus: [],
     boxStatus: [],
@@ -117,18 +143,17 @@ export default () => ({
             onAuthStateChanged(auth, (user) => {
                 if (user) {
                     this.user = user;
-                    this.syncStats();
+                    this.syncStats(); // This will also sync settings
                 } else {
                     this.user = null;
-                    // retrieve local stats if not logged in? 
-                    // leveraging Alpine.$persist would need to be manual here if we removed it from the property def
-                    // Let's restore from localStorage manually if needed:
+                    this.loadLocalSettings();
                     const local = localStorage.getItem('_x_endlessStats');
                     if (local) this.endlessStats = JSON.parse(local);
                 }
             });
         } else {
             console.log("Firebase Auth not initialized (dev mode)");
+            this.loadLocalSettings();
             const local = localStorage.getItem('_x_endlessStats');
             if (local) this.endlessStats = JSON.parse(local);
         }
@@ -154,10 +179,13 @@ export default () => ({
             this.boxStatus[i] = ''
         }
 
-        this.alphabetStatus = []
-        for (let i = 0; i <= this.alphabet.length; i++) {
-            this.alphabetStatus[i] = ''
-        }
+        // Initialize alphabet status. 
+        // Note: loadLocalSettings() is called before this in init(), so alphabet and status should be ready?
+        // Actually loadLocalSettings calls setKeyboardLayout which sets this.alphabet.
+        // But we need to ensure alphabetStatus is sized correctly if not already.
+        // Initialize alphabet status. 
+        // Always reset for a new game!
+        this.alphabetStatus = new Array(this.alphabet.length).fill('');
 
         // fetch wordList & pick a random answer
         await this.fetchWordList(this.wordLength, (this.hardMode) ? 'hard' : '')
@@ -190,6 +218,7 @@ export default () => ({
         if (k == "Escape") {
             this.showStatsModal = false
             this.showNewGameModal = false
+            this.showSettingsModal = false
         }
 
         // only respond to letters A-Z
@@ -197,7 +226,10 @@ export default () => ({
             this.letterClicked(k.toUpperCase())
         }
     },
-    newGame() {
+    newGame(force = false) {
+        if (!force && this.numGuesses > 0 && !this.isWinner && !this.isLoser) {
+            if (!confirm("Game in progress! Are you sure you want to quit?")) return;
+        }
         this.showStatsModal = false
         this.showNewGameModal = false
         this.init()
@@ -228,6 +260,7 @@ export default () => ({
                 // remove matches from answer array (to prevent dupe matches)
                 answerClone[answerClone.indexOf(g)] = null
                 // console.log(g, 'right!', 'box:', this.boxStatus[index])
+                this.playSound('match');
             }
         });
         // console.log(answerClone)
@@ -259,10 +292,12 @@ export default () => ({
         // CHECK: winner?
         if (this.correctLetters == this.wordLength) {
             this.$nextTick(() => this.gameWon())
+            this.playSound('win');
         }
         // CHECK: game over? (max # of guesses reached?)
         else if (this.numGuesses == this.totalGuesses) {
             this.$nextTick(() => this.gameLost())
+            this.playSound('loss');
         }
 
         // game on. done evaluating current guess, reset cursor & ready check
@@ -296,6 +331,7 @@ export default () => ({
 
         // add letter to letters[] array
         this.letters[this.cursor] = l
+        this.playSound('click');
 
         // if cursor > word length, and word is valid (in answersN[] array), ready to check
         if ((this.cursor == this.wordLength - 1) && (this.validWordList.includes(this.guess))) this.isReadyToCheck = true
@@ -308,7 +344,20 @@ export default () => ({
         if (!this.isReadyToCheck) return
         if (this.isWinner || this.isLoser) return
 
+        // Prevent duplicates
+        if (this.guesses.includes(this.guess.toUpperCase())) {
+            this.playSound('backspace');
+            this.showMessage("Already guessed!");
+            return;
+        }
+
+        this.playSound('enter');
         this.evaluateGuess()
+    },
+    showMessage(msg, duration = 2000) {
+        this.toastMessage = msg;
+        this.showToast = true;
+        setTimeout(() => { this.showToast = false }, duration);
     },
     backspace() {
         // if game is over, do nothing
@@ -318,6 +367,7 @@ export default () => ({
         this.letters[this.cursor - 1] = ''
         this.cursor--
         if (this.cursor < 0) this.cursor = 0
+        this.playSound('backspace');
 
         // if erasing a letter, guess is no longer ready to check
         this.isReadyToCheck = false
@@ -476,7 +526,8 @@ export default () => ({
             try {
                 const userRef = doc(db, "users", this.user.uid);
                 await updateDoc(userRef, {
-                    history: arrayUnion(statsObj)
+                    history: arrayUnion(statsObj),
+                    settings: this.settings
                 });
             } catch (e) {
                 console.error("Error syncing stats", e);
@@ -510,11 +561,16 @@ export default () => ({
             // Load cloud stats
             const data = docSnap.data();
             this.endlessStats = data.history || [];
+            if (data.settings) {
+                this.settings = { ...this.settings, ...data.settings };
+                this.setKeyboardLayout(this.settings.keyboardLayout, false);
+            }
         } else {
             // New user doc
             await setDoc(userRef, {
                 email: this.user.email,
-                history: this.endlessStats // push any local stats? 
+                history: this.endlessStats, // push any local stats? 
+                settings: this.settings
             });
         }
     },
@@ -522,6 +578,181 @@ export default () => ({
         this.endlessStats = []
         this.dailyStats = []
         this.dailyChallengeComplete = false
+    },
+    loadLocalSettings() {
+        const stored = localStorage.getItem('wordletta_settings');
+        if (stored) {
+            try {
+                const parsed = JSON.parse(stored);
+                // merge to ensure new keys exist
+                this.settings = { ...this.settings, ...parsed };
+            } catch (e) { console.error('Error loading settings', e) }
+        }
+        // Apply layout
+        this.setKeyboardLayout(this.settings.keyboardLayout, false); // false = don't save again
+    },
+    saveData() {
+        // Consolidated save function
+        if (this.user) {
+            this.syncStats();
+        } else {
+            localStorage.setItem('wordletta_settings', JSON.stringify(this.settings));
+        }
+    },
+    toggleSound() {
+        this.settings.sound = !this.settings.sound;
+        this.saveData();
+    },
+    setKeyboardLayout(layoutName, save = true) {
+        if (!this.LAYER_DEFS[layoutName]) return;
+
+        const oldAlphabet = [...this.alphabet];
+        const oldStatus = [...this.alphabetStatus];
+
+        // Map status to letter
+        let statusMap = {};
+        oldAlphabet.forEach((letter, index) => {
+            statusMap[letter] = oldStatus[index];
+        });
+
+        // Set New Layout
+        this.settings.keyboardLayout = layoutName;
+        this.keyboardRows = this.LAYER_DEFS[layoutName];
+        this.alphabet = this.keyboardRows.flat();
+
+        // Rebuild Status Array in new order
+        this.alphabetStatus = this.alphabet.map(letter => statusMap[letter] || '');
+
+        if (save) this.saveData();
+    },
+
+    // Audio Context Singleton
+    audioCtx: null,
+
+    initAudio() {
+        if (!this.audioCtx) {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) {
+                this.audioCtx = new AudioContext();
+            }
+        }
+        if (this.audioCtx && this.audioCtx.state === 'suspended') {
+            this.audioCtx.resume();
+        }
+    },
+
+    playSound(type) {
+        if (!this.settings.sound) return;
+        this.initAudio();
+        if (!this.audioCtx) return;
+
+        const now = this.audioCtx.currentTime;
+
+        // Mechanical Switch Simulation (Click + Thock)
+        const createClick = (time, freq = 1500, vol = 0.1) => {
+            const osc = this.audioCtx.createOscillator();
+            const gain = this.audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(this.audioCtx.destination);
+            osc.frequency.setValueAtTime(freq, time);
+            osc.frequency.exponentialRampToValueAtTime(freq * 0.5, time + 0.05);
+            gain.gain.setValueAtTime(vol, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.05);
+            osc.start(time);
+            osc.stop(time + 0.05);
+        };
+
+        const createThock = (time, freq = 200, vol = 0.3) => {
+            const osc = this.audioCtx.createOscillator();
+            const gain = this.audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(this.audioCtx.destination);
+            osc.type = 'sine'; // softer than triangle
+            osc.frequency.setValueAtTime(freq, time);
+            osc.frequency.exponentialRampToValueAtTime(50, time + 0.1);
+            gain.gain.setValueAtTime(vol * 0.6, time); // reduced volume
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.1);
+            osc.start(time);
+            osc.stop(time + 0.1);
+        };
+
+        // Reuse simple osc for legacy effects compatibility (just in case)
+        const osc = this.audioCtx.createOscillator();
+        const gainNode = this.audioCtx.createGain();
+        osc.connect(gainNode);
+        gainNode.connect(this.audioCtx.destination);
+
+        if (type === 'click') {
+            // Standard Key: High click + Low thud
+            createClick(now, 1500, 0.05);
+            createThock(now, 200, 0.2);
+        } else if (type === 'enter') {
+            // Stabilized Key: Lower thud, slightly louder
+            createClick(now, 1200, 0.05);
+            createThock(now, 150, 0.3);
+        } else if (type === 'enter') {
+            osc.frequency.setValueAtTime(400, now);
+            osc.frequency.exponentialRampToValueAtTime(200, now + 0.1);
+            gainNode.gain.setValueAtTime(0.2, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            osc.start(now);
+            osc.stop(now + 0.1);
+        } else if (type === 'backspace') {
+            // Subtle tick / paper-ish sound
+            osc.frequency.setValueAtTime(800, now);
+            osc.type = 'triangle'; // softer than sawtooth
+            // Filter noise-like effect? Synth is simple, let's just do a short high pitch chirp
+            // Or actually, let's use a quick noise burst if we could, but osc is easier.
+            // Let's do a quick pitch drop "pew" but very short and quiet
+            osc.frequency.setValueAtTime(300, now);
+            osc.frequency.exponentialRampToValueAtTime(100, now + 0.05);
+
+            gainNode.gain.setValueAtTime(0.1, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.03); // very short
+            osc.start(now);
+            osc.stop(now + 0.03);
+        } else if (type === 'match') {
+            // Nice ding
+            osc.frequency.setValueAtTime(800, now);
+            osc.type = 'sine';
+            gainNode.gain.setValueAtTime(0.2, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            osc.start(now);
+            osc.stop(now + 0.3);
+        } else if (type === 'win') {
+            // Little fanfare
+            this.playNote(523.25, 0, 0.2); // C5
+            this.playNote(659.25, 0.2, 0.2); // E5
+            this.playNote(783.99, 0.4, 0.4); // G5
+            this.playNote(1046.50, 0.6, 0.6); // C6
+        } else if (type === 'loss') {
+            // Sad thud
+            osc.frequency.setValueAtTime(200, now);
+            osc.frequency.exponentialRampToValueAtTime(50, now + 0.5);
+            osc.type = 'triangle';
+            gainNode.gain.setValueAtTime(0.3, now);
+            gainNode.gain.linearRampToValueAtTime(0, now + 0.5);
+            osc.start(now);
+            osc.stop(now + 0.5);
+        }
+    },
+
+    playNote(freq, delay, duration) {
+        if (!this.settings.sound || !this.audioCtx) return;
+        const osc = this.audioCtx.createOscillator();
+        const gainNode = this.audioCtx.createGain();
+        osc.connect(gainNode);
+        gainNode.connect(this.audioCtx.destination);
+
+        const now = this.audioCtx.currentTime + delay;
+        osc.frequency.value = freq;
+        osc.type = 'triangle';
+
+        gainNode.gain.setValueAtTime(0.1, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + duration);
+
+        osc.start(now);
+        osc.stop(now + duration);
     }
 
 })

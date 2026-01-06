@@ -49,6 +49,16 @@
 
     <!-- HEADER REMOVED -->
 
+    <!-- Toast Notification -->
+    <div x-show="showToast" x-transition:enter="transition ease-out duration-300"
+      x-transition:enter-start="opacity-0 transform translate-y-2"
+      x-transition:enter-end="opacity-100 transform translate-y-0" x-transition:leave="transition ease-in duration-200"
+      x-transition:leave-start="opacity-100 transform translate-y-0"
+      x-transition:leave-end="opacity-0 transform translate-y-2"
+      class="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 px-6 py-3 bg-slate-800/90 text-white font-bold rounded-lg shadow-xl pointer-events-none backdrop-blur-sm border border-slate-700">
+      <span x-text="toastMessage"></span>
+    </div>
+
     <main class="flex flex-auto flex-col justify-center">
       <div class="board p-3 lg:p-6 w-screen">
 
@@ -96,23 +106,38 @@
 
         <!-- keyboard -->
         <div :class="(isWinner || isLoser) ? 'opacity-40' : ''"
-          class="fixed bottom-20 left-0 right-0 z-20 flex justify-center flex-wrap w-full border-0 gap-1.5 py-4 max-w-3xl mx-auto bg-slate-50/90 backdrop-blur-sm border-t border-slate-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-          <template x-for="letter, i in alphabet" :key="i">
-            <div x-ref="i" x-text="letter"
-              class="noselect cursor-pointer overflow-none flex items-center justify-center w-8 md:w-10 h-10 md:h-12 text-lg md:text-2xl font-bold text-slate-700 bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 hover:from-white hover:to-slate-100 rounded shadow-sm transition-all duration-150 border border-slate-200"
-              :class="{
-                  'opacity-25': alphabetStatus[i] === 0,
-                  'from-amber-200 via-amber-300 to-amber-400 text-white border-amber-400': alphabetStatus[i] == 1,
-                  'from-emerald-300 via-emerald-400 to-emerald-500 text-white border-emerald-500': alphabetStatus[i] == 2
-                }" @click="letterClicked(letter)"></div>
+          class="fixed bottom-20 left-0 right-0 z-20 flex flex-col items-center justify-center w-full border-0 gap-1.5 p-2 max-w-3xl mx-auto bg-slate-50/90 backdrop-blur-sm border-t border-slate-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+
+          <template x-for="(row, rowIndex) in keyboardRows" :key="rowIndex">
+            <div class="flex justify-center gap-1.5 w-full"
+              :class="{'ml-[-20px]': rowIndex === keyboardRows.length - 1}">
+
+              <!-- ENTER (Left of 3rd Row) -->
+              <template x-if="rowIndex === keyboardRows.length - 1">
+                <div @click="enter" :class="!isReadyToCheck ? 'opacity-30' : 'animate-bounce'"
+                  class="noselect cursor-pointer overflow-none flex items-center justify-center px-1 w-12 md:w-16 h-10 md:h-12 text-xs md:text-sm font-bold text-white bg-indigo-500 hover:bg-indigo-600 rounded shadow-sm disabled:opacity-40 transition-all duration-200">
+                  ENTER</div>
+              </template>
+
+              <template x-for="letter in row" :key="letter">
+                <div x-text="letter"
+                  class="noselect cursor-pointer overflow-none flex items-center justify-center w-8 md:w-10 h-10 md:h-12 text-lg md:text-2xl font-bold text-slate-700 bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 hover:from-white hover:to-slate-100 rounded shadow-sm transition-all duration-150 border border-slate-200"
+                  :class="{
+                        'opacity-25': alphabetStatus[alphabet.indexOf(letter)] === 0,
+                        'from-amber-200 via-amber-300 to-amber-400 text-white border-amber-400': alphabetStatus[alphabet.indexOf(letter)] == 1,
+                        'from-emerald-300 via-emerald-400 to-emerald-500 text-white border-emerald-500': alphabetStatus[alphabet.indexOf(letter)] == 2
+                        }" @click="letterClicked(letter)"></div>
+              </template>
+
+              <!-- BACKSPACE (Right of 3rd Row) -->
+              <template x-if="rowIndex === keyboardRows.length - 1">
+                <div @click="backspace" :class="cursor == 0 ? 'opacity-30' : ''"
+                  class="noselect cursor-pointer overflow-none flex items-center justify-center w-12 md:w-16 h-10 md:h-12 text-lg md:text-2xl font-bold text-slate-700 bg-gradient-to-br from-slate-100 to-slate-300 hover:from-slate-50 hover:to-slate-200 rounded shadow-sm border border-slate-300">
+                  ⌫</div>
+              </template>
+
+            </div>
           </template>
-          <!-- Backspace / Enter -->
-          <div @click="backspace" :class="cursor == 0 ? 'opacity-30' : ''"
-            class="noselect cursor-pointer overflow-none flex items-center justify-center w-10 md:w-12 h-10 md:h-12 text-lg md:text-2xl font-bold text-slate-700 bg-gradient-to-br from-slate-100 to-slate-300 hover:from-slate-50 hover:to-slate-200 rounded shadow-sm px-1 ml-1 border border-slate-300">
-            ⌫</div>
-          <div @click="enter" :class="!isReadyToCheck ? 'opacity-30' : 'animate-bounce'"
-            class="noselect cursor-pointer overflow-none flex items-center justify-center px-4 h-10 md:h-12 text-sm md:text-base font-bold text-white bg-indigo-500 hover:bg-indigo-600 rounded shadow-sm mx-2 disabled:opacity-40 transition-all duration-200">
-            ENTER</div>
         </div>
 
 
@@ -126,7 +151,7 @@
             NEW GAME modal
           -->
         <div x-show="showNewGameModal" x-transition.opacity.duration.600ms style="display: none;"
-          class="fixed inset-0 z-30 flex items-center justify-center overflow-auto bg-slate-900 bg-opacity-75 backdrop-blur-sm">
+          class="fixed inset-0 z-30 flex items-center justify-center overflow-auto bg-slate-900 bg-opacity-40 backdrop-blur-sm">
           <!-- modal inner -->
           <div x-show="showNewGameModal" x-transition.duration.600ms
             class="w-4/5 md:w-1/2 lg:w-2/5 p-6 mx-auto bg-white rounded-xl shadow-2xl"
@@ -163,11 +188,17 @@
 
               <!-- daily challenge -->
               <div class="w-full flex flex-col items-center">
-                <h3 class="text-lg font-bold my-2 text-indigo-500">Daily Challenge</h3>
+                <h3 class="text-2xl font-bold my-2 text-indigo-500">Daily Challenge <span
+                    x-text="new Date().toLocaleDateString('en-US', {month:'numeric', day:'numeric'})"></span></h3>
                 <template x-if="!dailyChallengeComplete">
                   <button @click="dailyChallenge = true; newGame()"
-                    class="w-full hover:bg-indigo-600 hover:shadow-lg transition-all transform hover:-translate-y-0.5 py-3 px-6 text-center text-lg font-bold text-white bg-indigo-500 rounded-lg shadow-md">
-                    Play Today's Challenge!
+                    class="h-14 flex items-center justify-center gap-1.5 w-full hover:bg-indigo-600 hover:shadow-lg transition-all transform hover:-translate-y-0.5 py-3 px-6 text-center text-lg font-bold text-white bg-indigo-500 rounded-lg shadow-md">
+                    <!-- Calendar Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                      <path
+                        d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z" />
+                    </svg>
+                    <span>Play Today's Challenge!</span>
                   </button>
                 </template>
                 <template x-if="dailyChallengeComplete"><span
@@ -177,33 +208,31 @@
 
               <!-- # of letters -->
               <div class="mt-4 pt-4 w-full text-center">
-                <h3 class="text-lg font-bold my-2 text-indigo-500">∞ Endless Mode</h3>
+                <h3 class="text-2xl font-bold my-2 text-indigo-500">Endless Mode</h3>
                 <div class="flex flex-col items-center gap-2 mb-4">
                   <div class="flex justify-center gap-1 flex-wrap">
                     <template x-for="i in 5">
                       <button
-                        class="w-8 h-8 flex items-center justify-center text-sm font-bold transition-all duration-200"
+                        class="w-8 h-8 rounded-md flex items-center justify-center text-sm font-bold transition-all duration-200"
                         :class="{
-                              'bg-indigo-600 text-white shadow-md transform scale-110 rounded-md z-10' : wordLength == i,
-                              'bg-slate-200 text-slate-500 hover:bg-slate-300' : wordLength !== i,
-                              'rounded-l-lg' : i == 1 && wordLength !== 1,
-                              'rounded-r-lg' : i == 5 && wordLength !== 5,
-                              'rounded' : (i !== 1 && i !== 5) && wordLength !== i
+                              'bg-rose-500 text-white shadow-md transform scale-110 z-10' : wordLength == i && hardMode,
+                              'bg-indigo-600 text-white shadow-md transform scale-110 z-10' : wordLength == i && !hardMode,
+                              'bg-slate-200 text-slate-500 hover:bg-slate-300' : wordLength !== i
                             }" @click="wordLength = i; (wordLength > 6) ? hardMode = true : null" x-text="i"></button>
                     </template>
                   </div>
                   <div class="flex justify-center gap-1 flex-wrap">
                     <template x-for="i in 5">
                       <button
-                        class="w-8 h-8 flex items-center justify-center text-sm font-bold transition-all duration-200"
+                        class="w-8 h-8 rounded-md flex items-center justify-center text-sm font-bold transition-all duration-200"
                         :class="{
-                              'bg-indigo-600 text-white shadow-md transform scale-110 rounded-md z-10' : wordLength == (i+5),
-                              'bg-slate-200 text-slate-500 hover:bg-slate-300' : wordLength !== (i+5),
-                              'rounded-l-lg' : i == 1 && wordLength !== 6,
-                              'rounded-r-lg' : i == 5 && wordLength !== 10,
-                              'rounded' : (i !== 1 && i !== 5) && wordLength !== (i+5)
+                              'bg-rose-500 text-white shadow-md transform scale-110 z-10' : wordLength == (i+5) && hardMode,
+                              'bg-indigo-600 text-white shadow-md transform scale-110 z-10' : wordLength == (i+5) && !hardMode,
+                              'bg-gradient-to-br from-slate-200 to-rose-200 text-slate-600 hover:to-rose-300' : wordLength !== (i+5) && (i+5) > 6,
+                              'bg-slate-200 text-slate-500 hover:bg-slate-300' : wordLength !== (i+5) && (i+5) <= 6
                             }" @click="wordLength = (i+5); (wordLength > 6) ? hardMode = true : null"
                         x-text="i+5"></button>
+
                     </template>
                   </div>
                 </div>
@@ -241,8 +270,8 @@
 
                 <div class="grid place-items-center mt-6">
                   <button @click="newGame"
-                    class="w-full hover:bg-indigo-600 hover:shadow-lg transition-all transform hover:-translate-y-0.5 py-3 px-6 text-center text-lg font-bold text-white bg-indigo-500 rounded-lg shadow-md">
-                    Play Endless Mode
+                    class="h-14 flex items-center justify-center w-full hover:bg-indigo-600 hover:shadow-lg transition-all transform hover:-translate-y-0.5 py-3 px-6 text-center text-lg font-bold text-white bg-indigo-500 rounded-lg shadow-md">
+                    <span class="text-3xl mr-3 font-bold leading-none mb-1">∞</span> Play Endless Mode
                   </button>
                 </div>
               </div>
@@ -255,7 +284,7 @@
             SHARE modal
           -->
         <div x-show="showShareModal" x-transition.opacity.duration.600ms style="display: none;"
-          class="fixed inset-0 z-30 flex items-center justify-center overflow-auto bg-slate-900 bg-opacity-75 backdrop-blur-sm">
+          class="fixed inset-0 z-30 flex items-center justify-center overflow-auto bg-slate-900 bg-opacity-40 backdrop-blur-sm">
           <!-- modal inner -->
           <div x-show="showShareModal" x-transition.opacity.duration.600ms
             class="w-4/5 sm:w-2/3 md:w-1/2 p-8 mx-auto text-center bg-white rounded-xl shadow-2xl border-4"
@@ -289,18 +318,13 @@
 
                 <div class="mt-6 flex justify-center gap-3">
                   <button @click="showShareModal = false; showNewGameModal = true"
-                    class="hover:bg-indigo-100 hover:text-indigo-800 transition-colors py-2 px-6 text-sm font-bold text-indigo-600 bg-white border-2 border-indigo-100 rounded-lg">
+                    class="whitespace-nowrap hover:bg-indigo-100 hover:text-indigo-800 transition-colors py-2 px-6 text-sm font-bold text-indigo-600 bg-white border-2 border-indigo-100 rounded-lg">
                     New Game
                   </button>
                   <div title="Share your score">
                     <button x-ref="shareButton" @click="shareGame()"
                       class="py-2 px-6 text-sm font-bold text-white bg-indigo-500 hover:bg-indigo-600 rounded-lg shadow-md transition-all hover:-translate-y-0.5">
                       Share Score
-                    </button>
-                    <!-- Share Image Button -->
-                    <button @click="shareGame(true)" title="Share as Image"
-                      class="ml-2 py-2 px-3 text-sm font-bold text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg shadow-md transition-all hover:-translate-y-0.5">
-                      📸
                     </button>
                   </div>
                 </div>
@@ -315,7 +339,7 @@
             STATS modal
           -->
         <div x-show="showStatsModal" x-transition.opacity.duration.600ms style="display: none;"
-          class="fixed inset-0 z-30 flex items-center justify-center overflow-auto bg-slate-900 bg-opacity-75 backdrop-blur-sm">
+          class="fixed inset-0 z-30 flex items-center justify-center overflow-auto bg-slate-900 bg-opacity-40 backdrop-blur-sm">
           <!-- modal inner -->
           <div x-show="showStatsModal" x-transition.opacity.duration.600ms
             class="w-3/5 sm:w-2/5 md:w-1/3 lg:w-1/4 max-w-4/5 p-6 mx-auto text-left bg-white rounded-xl shadow-2xl"
@@ -395,33 +419,158 @@
           </div>
         </div>
 
+        <!--
+            SETTINGS modal
+          -->
+        <div x-show="showSettingsModal" x-transition.opacity.duration.600ms style="display: none;"
+          class="fixed inset-0 z-30 flex items-center justify-center overflow-auto bg-slate-900 bg-opacity-40 backdrop-blur-sm">
+          <!-- modal inner -->
+          <div x-show="showSettingsModal" x-transition.opacity.duration.600ms
+            class="w-4/5 md:w-1/2 lg:w-1/3 p-6 mx-auto bg-white rounded-xl shadow-2xl"
+            @click.away="showSettingsModal = false">
+            <!-- Title / Close-->
+            <div class="flex items-start justify-between mb-6 border-b border-slate-100 pb-2">
+              <h5 class="mr-3 text-slate-800 max-w-none text-xl font-bold">Settings</h5>
+              <button type="button" class="text-2xl font-bold text-slate-400 hover:text-slate-600 cursor-pointer"
+                @click="showSettingsModal = false">&times;</button>
+            </div>
+
+            <!-- content -->
+            <div class="flex flex-col gap-6">
+
+              <!-- Sound -->
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="text-lg font-bold text-slate-700">Sound</div>
+                  <div class="text-xs text-slate-400">Enable game sounds</div>
+                </div>
+                <!-- Toggle Switch -->
+                <button
+                  class="relative inline-flex items-center h-6 rounded-full w-11 transition-colors duration-200 focus:outline-none"
+                  :class="settings.sound ? 'bg-indigo-500' : 'bg-slate-300'" @click="toggleSound">
+                  <span
+                    class="inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-200 ml-1"
+                    :class="settings.sound ? 'translate-x-5' : 'translate-x-0'"></span>
+                </button>
+              </div>
+
+              <!-- Keyboard Layout -->
+              <div>
+                <div class="mb-3">
+                  <div class="text-lg font-bold text-slate-700">Keyboard Layout</div>
+                  <div class="text-xs text-slate-400">Choose your preferred layout</div>
+                </div>
+
+                <div class="flex bg-slate-100 p-1 rounded-lg">
+                  <template x-for="layout in ['QWERTY', 'DVORAK', 'ALPHA']">
+                    <button class="flex-1 py-2 text-sm font-bold rounded-md transition-all duration-200"
+                      :class="settings.keyboardLayout === layout ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+                      @click="setKeyboardLayout(layout)" x-text="layout"></button>
+                  </template>
+                </div>
+              </div>
+
+            </div>
+
+            <div class="mt-8 text-center">
+              <div @click="showReleaseNotesModal = true; showSettingsModal = false"
+                class="text-xs text-slate-300 hover:text-indigo-500 cursor-pointer transition-colors underline decoration-slate-200 hover:decoration-indigo-500">
+                v<span x-text="version"></span></div>
+            </div>
+
+          </div>
+        </div>
+
+        <!--
+            RELEASE NOTES modal
+          -->
+        <div x-show="showReleaseNotesModal" x-transition.opacity.duration.600ms style="display: none;"
+          class="fixed inset-0 z-30 flex items-center justify-center overflow-auto bg-slate-900 bg-opacity-40 backdrop-blur-sm">
+          <!-- modal inner -->
+          <div x-show="showReleaseNotesModal" x-transition.opacity.duration.600ms
+            class="w-4/5 md:w-1/2 lg:w-1/3 p-6 mx-auto bg-white rounded-xl shadow-2xl relative"
+            @click.away="showReleaseNotesModal = false">
+            <!-- Title / Close-->
+            <div class="flex items-start justify-between mb-6 border-b border-slate-100 pb-2">
+              <h5 class="mr-3 text-slate-800 max-w-none text-xl font-bold">Release Notes <span
+                  class="text-sm font-normal text-slate-400">v1.3.0</span></h5>
+              <button type="button" class="text-2xl font-bold text-slate-400 hover:text-slate-600 cursor-pointer"
+                @click="showReleaseNotesModal = false">&times;</button>
+            </div>
+
+            <!-- content -->
+            <div class="text-slate-700 text-sm overflow-y-auto max-h-[60vh] pr-2">
+              <div class="mb-6">
+                <h4 class="font-bold text-indigo-600 mb-2 text-base">🔊 Mechanical Audio Engine</h4>
+                <p class="mb-2 text-slate-600">Complete sound overhaul with a new procedural audio synthesizer.</p>
+                <ul class="list-disc list-outside ml-4 space-y-1 text-slate-500">
+                  <li><strong>Thocky Typing:</strong> Dual-oscillator keys for that satisfying click.</li>
+                  <li><strong>Tactile Backspace:</strong> Subtle scratch/tick feedback.</li>
+                  <li><strong>Heavy Enter:</strong> Stabilized key thud on submit.</li>
+                </ul>
+              </div>
+
+              <div class="mb-6">
+                <h4 class="font-bold text-indigo-600 mb-2 text-base">⌨️ Pro Keyboard Layouts</h4>
+                <p class="mb-2 text-slate-600">Full layout support in standard positions.</p>
+                <ul class="list-disc list-outside ml-4 space-y-1 text-slate-500">
+                  <li><strong>Authentic Stagger:</strong> Keys are shifted for a natural feel.</li>
+                  <li><strong>Enter/Delete:</strong> Moved to authentic left/right positions.</li>
+                  <li><strong>Dvorak & Alpha:</strong> New layout options in Settings.</li>
+                </ul>
+              </div>
+
+              <div class="mb-6">
+                <h4 class="font-bold text-indigo-600 mb-2 text-base">✨ UI Polish & Features</h4>
+                <ul class="list-disc list-outside ml-4 space-y-1 text-slate-500">
+                  <li><strong>Unified Design:</strong> Consistent glass-morphism modals.</li>
+                  <li><strong>Dynamic Ludicrous Mode:</strong> Red danger highlights for forced difficulty.</li>
+                  <li><strong>Toasts:</strong> Native alerts replaced with smooth notifications.</li>
+                  <li><strong>Smart Logic:</strong> Prevents duplicate guesses & ghost highlights.</li>
+                </ul>
+              </div>
+
+              <div class="text-xs text-slate-400 text-center mt-8 italic">
+                🙏 Thanks for playing WordLetta!
+              </div>
+            </div>
+
+          </div>
+        </div>
+
       </div><!-- /board -->
     </main>
 
     <footer
       class="fixed bottom-0 w-full flex justify-between items-center p-3 text-xs bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-slate-400 border-t-4 border-rose-500 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-20">
       <div class="flex gap-4 items-center">
-        <div class="font-bold text-slate-200 text-sm tracking-wide font-['Ramabhadra']">WORDLETTA <span
-            class="text-slate-500 font-normal font-sans">v<span x-text="version" class="text-[10px]"></span></span>
+        <div class="font-bold text-slate-200 text-sm tracking-wide font-['Ramabhadra']">
+          WORDLETTA <span
+            class="ml-2 inline-flex items-center gap-0.5 text-slate-400 font-normal font-sans cursor-pointer hover:text-indigo-400 transition-colors"
+            @click="showReleaseNotesModal = true">
+            v<span x-text="version" class="text-xs"></span>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+              stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </span>
         </div>
       </div>
 
-      <!-- New Game Button moved to footer -->
-      <button @click="showNewGameModal = true"
-        class="py-1 px-4 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 rounded-full shadow-lg transition-all hover:scale-105 active:scale-95">
-        New Game
-      </button>
-
-      <div class="flex gap-4 items-center">
-        <div x-show="endlessStats.length"><span class="cursor-pointer hover:text-white transition-colors"
-            @click="showStatsModal = true">📊 stats</span></div>
+      <div class="flex gap-6 items-center pr-2">
+        <div class="cursor-pointer hover:text-white hover:scale-110 transition-all text-xl"
+          @click="showSettingsModal = true" title="Settings">⚙️</div>
+        <div x-show="endlessStats.length"><span
+            class="cursor-pointer hover:text-white hover:scale-110 transition-all text-xl"
+            @click="showStatsModal = true" title="Stats">📊</span></div>
         <template x-if="user">
           <img :src="user.photoURL" class="w-8 h-8 rounded-full border border-slate-500 shadow-sm"
             :title="user.displayName">
         </template>
         <template x-if="!user">
           <button @click="showNewGameModal = true"
-            class="text-2xl grayscale opacity-50 hover:opacity-100 hover:grayscale-0 transition-all">👤</button>
+            class="text-2xl opacity-80 hover:opacity-100 hover:scale-110 transition-all" title="Sign In">👤</button>
         </template>
       </div>
     </footer>
