@@ -1,6 +1,6 @@
 {
   "name": "wordletapp",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "scripts": {
     "dev": "vite --host",
     "build": "vite build",
@@ -13,6 +13,7 @@
     "@alpinejs/persist": "^3.8.1",
     "alpinejs": "^3.8.1",
     "autoprefixer": "^10.4.2",
+    "canvas-confetti": "^1.9.4",
     "clipboard-polyfill": "^3.0.3",
     "firebase": "^12.7.0",
     "postcss": "^8.4.5",

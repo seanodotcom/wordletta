@@ -2,11 +2,12 @@ import * as clipboard from "clipboard-polyfill/text";
 import { auth, db } from "./src/firebaseConfig";
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, setDoc, updateDoc, arrayUnion } from "firebase/firestore";
+import confetti from "canvas-confetti";
 
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '1.3.2',
+    version: '1.4.0',
     user: null,
     wordLength: 6,
     totalGuesses: 6,
@@ -67,6 +68,18 @@ export default () => ({
         "A tricky one, but you pulled it out in 5!",
         "Just got it on your last try!",
     ],
+    sharePhrases: [
+        "Genius!",
+        "Magnificent!",
+        "Impressive!",
+        "Splendid!",
+        "Great!",
+        "Phew!",
+        "Close one!",
+        "Unstoppable!",
+        "Sharp!",
+        "Brilliant!"
+    ],
     endlessStats: [], // Removed Alpine.$persist to rely on Firestore/Local merge logic manually if needed, or keeping it for offline support? 
     // actually keeping it simple: use local unless logged in.
     // For now, let's keep it as array and init in init()
@@ -78,7 +91,8 @@ export default () => ({
         // const arr = ["010112","200012","210110","211102","222222"]  // replace with this.guessStatus
         let newArr = []
         this.guessStatus.forEach(g => {
-            let str = g.split('').sort().reverse().join('').replaceAll(0, '⚪').replaceAll(1, '🟡').replaceAll(2, '🟢')
+            // Mirror exact positions (removed sort().reverse())
+            let str = g.split('').join('').replaceAll('0', '⚪').replaceAll('1', '🟡').replaceAll('2', '🟢')
             newArr.push(str || '⚪')
         })
         return newArr.join('\n')
@@ -376,7 +390,28 @@ export default () => ({
         // window.alert('You got it in ' + this.numGuesses + ((this.numGuesses < this.wordLength) ? '!' : '.') + ' Congrats!\n\nThe answer was: ' + this.answer)
         this.isWinner = true
         this.logStats()
+        this.confettiWin() // Fire confetti!
         this.showShareModal = true
+    },
+    confettiWin() {
+        const duration = 3 * 1000;
+        const animationEnd = Date.now() + duration;
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+        const randomInRange = (min, max) => Math.random() * (max - min) + min;
+
+        const interval = setInterval(() => {
+            const timeLeft = animationEnd - Date.now();
+
+            if (timeLeft <= 0) {
+                return clearInterval(interval);
+            }
+
+            const particleCount = 50 * (timeLeft / duration);
+            // since particles fall down, start a bit higher than random
+            confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+            confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+        }, 250);
     },
     gameLost() {
         // window.alert('Sorry, the answer was: ' + this.answer + '\n\nTry again!')
@@ -386,10 +421,23 @@ export default () => ({
     },
     async shareGame(asImage = false) {
         // build full shareBlurb
-        let title = (this.dailyChallenge) ? 'Daily Challenge ' + this.dailyChallengeDay : 'Random Game'
-        let blurb = 'WordLetta.com | ' + title + ' '
+        // Configurable APP_NAME / URL
+        const appName = import.meta.env.VITE_APP_NAME || 'WordLetta';
+        const appUrl = import.meta.env.VITE_APP_URL || 'wordletta.com'; // fallback if env missing
+
+        // Date format: "Jan 6"
+        const dateOptions = { month: 'short', day: 'numeric' };
+        const shortDate = new Date().toLocaleDateString('en-US', dateOptions);
+
+        let title = (this.dailyChallenge) ? `Daily Challenge ${shortDate}` : `Random ${this.wordLength}-Letter Game`
+
+        // Random Phrase
+        const phrase = this.sharePhrases[Math.floor(Math.random() * this.sharePhrases.length)];
+
+        let blurb = `${appName} | ${title} | ${phrase}\n`
             + (this.isWinner ? '✔️' : '❌') + ' ' + this.numGuesses + '/6\n'
             + this.shareBlurb
+            + `\n${appUrl}`;
 
         if (asImage) {
             try {
@@ -422,9 +470,9 @@ export default () => ({
         // launch browser share sheet (text only fallback)
         if (navigator.share && !asImage) {  // https://stackoverflow.com/a/55218902/5701
             navigator.share({
-                title: 'WordLetta',
-                text: 'Check out my WordLetta score!',
-                url: 'http://sean-o.com/wordlet',
+                title: appName,
+                text: phrase,
+                url: appUrl,
             }).then(() => {
                 // console.log('Shared successfully.')
             }).catch((error) => {
@@ -722,10 +770,14 @@ export default () => ({
             osc.stop(now + 0.3);
         } else if (type === 'win') {
             // Little fanfare
-            this.playNote(523.25, 0, 0.2); // C5
-            this.playNote(659.25, 0.2, 0.2); // E5
-            this.playNote(783.99, 0.4, 0.4); // G5
-            this.playNote(1046.50, 0.6, 0.6); // C6
+            // TrumpetScript: Bah buh-buh BAH buh Buh BAAAAAH!!
+            this.playNote(523.25, 0.0, 0.15); // C5 (Bah)
+            this.playNote(392.00, 0.20, 0.10); // G4 (buh)
+            this.playNote(392.00, 0.35, 0.10); // G4 (buh)
+            this.playNote(523.25, 0.50, 0.25); // C5 (BAH)
+            this.playNote(659.25, 0.80, 0.15); // E5 (buh)
+            this.playNote(783.99, 1.00, 0.15); // G5 (Buh)
+            this.playNote(1046.50, 1.20, 0.80); // C6 (BAAAAAH!!)
         } else if (type === 'loss') {
             // Sad thud
             osc.frequency.setValueAtTime(200, now);

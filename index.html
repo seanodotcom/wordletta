@@ -167,8 +167,13 @@
             <div class="mb-6 flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100">
               <template x-if="!user">
                 <button @click="login"
-                  class="flex items-center gap-2 text-sm font-bold text-indigo-600 hover:text-indigo-800 hover:underline">
-                  <span>Login to sync stats</span>
+                  class="flex items-center gap-2 text-sm font-bold text-indigo-600 hover:text-indigo-800">
+                  <!-- Finger Pointing Right (User SVG) -->
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 56 56" fill="currentColor">
+                    <path
+                      d="M3.344 30.895c0 9.914 6.656 16.546 17.625 16.546h5.109c5.414 0 8.555-2.554 8.625-6.914c1.711-.539 2.766-1.945 2.766-3.914c0-.656-.141-1.336-.352-2.039c1.875-.61 3.047-2.156 3.047-4.195c0-.54-.07-1.102-.258-1.664h7.805c2.976 0 4.945-1.969 4.945-4.735c0-2.789-1.969-4.757-4.945-4.757H28.164c-.117 0-.211-.07-.211-.188c0-.094.07-.164.164-.187l3.75-1.57c2.438-1.032 3.375-3.141 2.555-5.344c-.914-2.461-3.305-3.375-6.235-2.344l-11.601 4.125c-8.79 3.117-13.242 8.906-13.242 17.18m3.234.117c0-6.563 3.023-11.578 11.016-14.438l11.578-4.148c1.218-.446 2.11-.117 2.484.82c.328.89-.187 1.711-1.195 2.156l-7.125 3.188c-1.172.515-1.547 1.242-1.547 2.062c0 .985.773 1.688 1.851 1.688h24.282c1.008 0 1.71.68 1.71 1.64c0 .961-.702 1.618-1.71 1.618H30.578c-.82 0-1.43.703-1.43 1.523c0 .797.61 1.453 1.43 1.453h6.234c.211.399.329.938.329 1.406c0 1.172-.774 1.875-1.993 1.875h-5.46c-.868 0-1.43.704-1.43 1.5c0 .774.562 1.477 1.43 1.477h4.43c.21.398.327.938.327 1.383c0 1.195-.773 1.875-1.992 1.875h-3.656c-.867 0-1.453.726-1.453 1.523c0 .774.586 1.453 1.453 1.453h2.695c0 2.086-2.156 3.282-5.883 3.282h-4.265c-9.422 0-14.766-5.063-14.766-13.336" />
+                  </svg>
+                  <span class="underline">Login to track your stats</span>
                 </button>
               </template>
               <template x-if="user">
@@ -208,7 +213,8 @@
 
               <!-- # of letters -->
               <div class="mt-4 pt-4 w-full text-center">
-                <h3 class="text-2xl font-bold my-2 text-indigo-500">Endless Mode</h3>
+                <h3 class="text-2xl font-bold mt-2 mb-1 text-indigo-500">Endless Challenge</h3>
+                <div class="text-sm text-slate-400 mb-4">Play as much as you like!</div>
                 <div class="flex flex-col items-center gap-2 mb-4">
                   <div class="flex justify-center gap-1 flex-wrap">
                     <template x-for="i in 5">
@@ -239,39 +245,57 @@
                 <div class="text-xs font-bold text-slate-400 tracking-wider">LETTERS</div>
 
                 <!-- Hard Mode Switch - force on high-letter, uncurated lists -->
-                <div class="mt-6 flex justify-center">
-                  <div
-                    class="flex flex-row cursor-pointer items-center p-2 rounded-lg hover:bg-slate-50 transition-colors"
-                    :class="wordLength > 6 ? 'opacity-50 pointer-events-none' : ''"
+                <div class="mt-6 flex justify-center items-center gap-3">
+
+                  <!-- Toggle Wrapper (Clickable) -->
+                  <div class="flex flex-row items-center p-2 rounded-lg transition-colors"
+                    :class="wordLength <= 6 ? 'cursor-pointer hover:bg-slate-50' : 'opacity-100'"
                     @click="(wordLength <= 6) ? hardMode = !hardMode : null">
-                    <div class="w-11 h-6 flex items-center bg-slate-300 rounded-full p-1 duration-300 ease-in-out"
-                      :class="{'bg-rose-500': hardMode}">
+
+                    <!-- Lock Icon (only if forced) -->
+                    <template x-if="wordLength > 6">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-rose-600" viewBox="0 0 20 20"
+                        fill="currentColor">
+                        <path fill-rule="evenodd"
+                          d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                          clip-rule="evenodd" />
+                      </svg>
+                    </template>
+
+                    <!-- Toggle Track -->
+                    <div class="w-11 h-6 flex items-center rounded-full p-1 duration-300 ease-in-out"
+                      :class="hardMode ? 'bg-rose-500' : 'bg-slate-300'">
+                      <!-- Toggle Knob -->
                       <div class="bg-white w-4 h-4 rounded-full shadow-md transform duration-300 ease-in-out"
                         :class="{'translate-x-5': hardMode}"></div>
                     </div>
-                    <div class="group relative flex items-center">
-                      <span class="text-sm ml-3 font-semibold text-slate-600"
-                        :class="hardMode ? 'text-rose-600' : ''">LUDICROUS MODE</span>
-                      <div class="ml-2 text-slate-400 cursor-help">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
-                          stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <!-- Tooltip -->
-                        <div
-                          class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 p-2 bg-slate-800 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                          Adds many lightly used / esoteric words to the mix!
-                        </div>
-                      </div>
+
+                    <!-- Label -->
+                    <span class="text-sm ml-3 font-semibold text-slate-600"
+                      :class="hardMode ? 'text-rose-600' : ''">LUDICROUS MODE</span>
+                  </div>
+
+                  <!-- Info Icon / Tooltip (Independent) -->
+                  <div class="group relative flex items-center text-slate-400 cursor-help">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                      stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <!-- Tooltip -->
+                    <div
+                      class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 p-2 bg-slate-800 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 text-center">
+                      <p>Adds many lightly used / esoteric words to the mix!</p>
+                      <p class="mt-2 text-slate-300">Default for 7-10 letter words.</p>
                     </div>
                   </div>
+
                 </div>
 
                 <div class="grid place-items-center mt-6">
                   <button @click="newGame"
                     class="h-14 flex items-center justify-center w-full hover:bg-indigo-600 hover:shadow-lg transition-all transform hover:-translate-y-0.5 py-3 px-6 text-center text-lg font-bold text-white bg-indigo-500 rounded-lg shadow-md">
-                    <span class="text-3xl mr-3 font-bold leading-none mb-1">∞</span> Play Endless Mode
+                    <span class="text-3xl mr-3 font-bold leading-none mb-1">∞</span> Play Endless Challenge
                   </button>
                 </div>
               </div>
@@ -493,7 +517,7 @@
             <!-- Title / Close-->
             <div class="flex items-start justify-between mb-6 border-b border-slate-100 pb-2">
               <h5 class="mr-3 text-slate-800 max-w-none text-xl font-bold">Release Notes <span
-                  class="text-sm font-normal text-slate-400">v1.3.0</span></h5>
+                  class="text-sm font-normal text-slate-400">v1.4.0</span></h5>
               <button type="button" class="text-2xl font-bold text-slate-400 hover:text-slate-600 cursor-pointer"
                 @click="showReleaseNotesModal = false">&times;</button>
             </div>
@@ -501,33 +525,25 @@
             <!-- content -->
             <div class="text-slate-700 text-sm overflow-y-auto max-h-[60vh] pr-2">
               <div class="mb-6">
-                <h4 class="font-bold text-indigo-600 mb-2 text-base">🔊 Mechanical Audio Engine</h4>
-                <p class="mb-2 text-slate-600">Complete sound overhaul with a new procedural audio synthesizer.</p>
+                <h4 class="font-bold text-indigo-600 mb-2 text-base">🎉 Celebration & Sharing</h4>
                 <ul class="list-disc list-outside ml-4 space-y-1 text-slate-500">
-                  <li><strong>Thocky Typing:</strong> Dual-oscillator keys for that satisfying click.</li>
-                  <li><strong>Tactile Backspace:</strong> Subtle scratch/tick feedback.</li>
-                  <li><strong>Heavy Enter:</strong> Stabilized key thud on submit.</li>
+                  <li><strong>Confetti:</strong> A burst of joy when you win!</li>
+                  <li><strong>Enhanced Sharing:</strong> Share scores now show the exact pattern of your game.</li>
+                  <li><strong>Smart Dates:</strong> Daily Challenge now shows the date (e.g., "Jan 6").</li>
+                  <li><strong>Fun Phrases:</strong> Random accolades added to your share text.</li>
                 </ul>
               </div>
 
               <div class="mb-6">
-                <h4 class="font-bold text-indigo-600 mb-2 text-base">⌨️ Pro Keyboard Layouts</h4>
-                <p class="mb-2 text-slate-600">Full layout support in standard positions.</p>
-                <ul class="list-disc list-outside ml-4 space-y-1 text-slate-500">
-                  <li><strong>Authentic Stagger:</strong> Keys are shifted for a natural feel.</li>
-                  <li><strong>Enter/Delete:</strong> Moved to authentic left/right positions.</li>
-                  <li><strong>Dvorak & Alpha:</strong> New layout options in Settings.</li>
-                </ul>
-              </div>
-
-              <div class="mb-6">
-                <h4 class="font-bold text-indigo-600 mb-2 text-base">✨ UI Polish & Features</h4>
-                <ul class="list-disc list-outside ml-4 space-y-1 text-slate-500">
-                  <li><strong>Unified Design:</strong> Consistent glass-morphism modals.</li>
-                  <li><strong>Dynamic Ludicrous Mode:</strong> Red danger highlights for forced difficulty.</li>
-                  <li><strong>Toasts:</strong> Native alerts replaced with smooth notifications.</li>
-                  <li><strong>Smart Logic:</strong> Prevents duplicate guesses & ghost highlights.</li>
-                </ul>
+                <h4 class="font-bold text-slate-400 mb-2 text-base">PREVIOUS UPDATES</h4>
+                <div class="opacity-75">
+                  <h5 class="font-bold text-indigo-600 mb-1">v1.3.0</h5>
+                  <ul class="list-disc list-outside ml-4 space-y-1 text-slate-500 text-xs">
+                    <li>Mechanical Audio Engine (Click & Thock)</li>
+                    <li>Pro Keyboard Layouts (Dvorak, Alpha)</li>
+                    <li>Ludicrous Mode & UI Polish</li>
+                  </ul>
+                </div>
               </div>
 
               <div class="text-xs text-slate-400 text-center mt-8 italic">
@@ -545,8 +561,9 @@
       class="fixed bottom-0 w-full flex justify-between items-center p-3 text-xs bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-slate-400 border-t-4 border-rose-500 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-20">
       <div class="flex gap-4 items-center">
         <div class="font-bold text-slate-200 text-sm tracking-wide font-['Ramabhadra']">
-          WORDLETTA <span
-            class="ml-2 inline-flex items-center gap-0.5 text-slate-400 font-normal font-sans cursor-pointer hover:text-indigo-400 transition-colors"
+          <span class="cursor-pointer hover:text-white transition-colors"
+            @click="showNewGameModal = true">WORDLETTA</span> <span
+            class="ml-1 inline-flex items-center gap-0.5 text-slate-400 font-normal font-sans cursor-pointer hover:text-indigo-400 transition-colors"
             @click="showReleaseNotesModal = true">
             v<span x-text="version" class="text-xs"></span>
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
