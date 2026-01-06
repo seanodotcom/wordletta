@@ -6,7 +6,7 @@ import { doc, getDoc, setDoc, updateDoc, arrayUnion } from "firebase/firestore";
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '1.3.1',
+    version: '1.3.2',
     user: null,
     wordLength: 6,
     totalGuesses: 6,
@@ -563,7 +563,6 @@ export default () => ({
             this.endlessStats = data.history || [];
             if (data.settings) {
                 this.settings = { ...this.settings, ...data.settings };
-                this.setKeyboardLayout(this.settings.keyboardLayout, false);
             }
         } else {
             // New user doc
@@ -572,9 +571,9 @@ export default () => ({
                 history: this.endlessStats, // push any local stats? 
                 settings: this.settings
             });
-            // Ensure layout is initialized for new users
-            this.setKeyboardLayout(this.settings.keyboardLayout, false);
         }
+        // Always apply layout (defaults or loaded)
+        this.setKeyboardLayout(this.settings.keyboardLayout, false);
     },
     resetStats() {
         this.endlessStats = []
