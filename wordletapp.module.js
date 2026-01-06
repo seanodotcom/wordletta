@@ -6,7 +6,7 @@ import { doc, getDoc, setDoc, updateDoc, arrayUnion } from "firebase/firestore";
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '1.2',
+    version: '1.2.5',
     user: null,
     wordLength: 6,
     totalGuesses: 6,
@@ -56,6 +56,20 @@ export default () => ({
             newArr.push(str || '⚪')
         })
         return newArr.join('\n')
+    },
+    get guessDistribution() {
+        // return array of 6 integers representing wins at each guess count
+        if (!this.endlessStats) return [0, 0, 0, 0, 0, 0]
+        let dist = [0, 0, 0, 0, 0, 0]
+        this.endlessStats.filter(g => g.isWinner).forEach(g => {
+            if (g.numGuesses >= 1 && g.numGuesses <= 6) {
+                dist[g.numGuesses - 1]++
+            }
+        })
+        return dist
+    },
+    get recentHistory() {
+        return this.endlessStats ? this.endlessStats.slice().reverse().slice(0, 50) : []
     },
     get userGames() { return this.endlessStats && this.endlessStats.length },
     get userWins() { return this.endlessStats && this.endlessStats.filter(g => g.isWinner).length },
@@ -256,12 +270,7 @@ export default () => ({
         if (this.cursor == this.wordLength) this.cursor = 0
 
         // gracefull clear active row
-        setTimeout(() => {
-            for (let i = 0; i < this.wordLength; i++) {
-                this.letters[i] = ''
-                this.boxStatus[i] = ''
-            }
-        }, 200)
+
     },
     howManyInAnswer(l) {
         return (this.answer.split('')).filter(a => a == l).length
@@ -325,25 +334,43 @@ export default () => ({
         this.logStats()
         this.showShareModal = true
     },
-    shareGame() {
+    async shareGame(asImage = false) {
         // build full shareBlurb
         let title = (this.dailyChallenge) ? 'Daily Challenge ' + this.dailyChallengeDay : 'Random Game'
         let blurb = 'WordLetta.com | ' + title + ' '
             + (this.isWinner ? '✔️' : '❌') + ' ' + this.numGuesses + '/6\n'
             + this.shareBlurb
 
+        if (asImage) {
+            try {
+                const blob = await this.generateResultImage(title, this.isWinner ? 'WON' : 'LOST', this.numGuesses + '/6');
+                const file = new File([blob], 'wordletta-result.png', { type: 'image/png' });
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        files: [file],
+                        title: 'WordLetta Result',
+                        text: blurb
+                    });
+                    return;
+                }
+            } catch (e) {
+                console.error("Image sharing failed", e);
+                // fall through to text share
+            }
+        }
+
         // copy share copy to clipboard
         clipboard.writeText(blurb).then(
             () => {
                 // console.log("success!"); 
                 this.$refs.shareButton.innerText = "Copied!"
-                setTimeout(() => { this.$refs.shareButton.innerText = "Share your score!" }, 2000);
+                setTimeout(() => { this.$refs.shareButton.innerText = "Share Score" }, 2000);
             },
             () => { console.log("error!"); }
         );
 
-        // launch browser share sheet
-        if (navigator.share) {  // https://stackoverflow.com/a/55218902/5701
+        // launch browser share sheet (text only fallback)
+        if (navigator.share && !asImage) {  // https://stackoverflow.com/a/55218902/5701
             navigator.share({
                 title: 'WordLetta',
                 text: 'Check out my WordLetta score!',
@@ -353,9 +380,79 @@ export default () => ({
             }).catch((error) => {
                 console.log('Error sharing', error)
             });
-        } else {
-            // console.log('Sharing is not supported on this browser, do it the old way.');
         }
+    },
+    generateResultImage(title, status, score) {
+        return new Promise((resolve) => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const pixelRatio = window.devicePixelRatio || 1;
+            // set dimensions
+            const width = 600;
+            // height depends on grid size, let's estimate
+            // header: 100, grid: ~400, footer: 50
+            const rows = this.guesses.length;
+            const height = 200 + (rows * 60);
+
+            canvas.width = width;
+            canvas.height = height;
+
+            // Background
+            ctx.fillStyle = '#f8fafc'; // slate-50
+            ctx.fillRect(0, 0, width, height);
+
+            // Header
+            ctx.font = 'bold 40px Ramabhadra';
+            ctx.fillStyle = '#1e293b'; // slate-800
+            ctx.textAlign = 'center';
+            ctx.fillText('WORDLETTA', width / 2, 60);
+
+            ctx.font = '20px Lato';
+            ctx.fillStyle = '#64748b'; // slate-500
+            ctx.fillText(title, width / 2, 95);
+
+            // Score/Status
+            ctx.font = 'bold 30px Lato';
+            ctx.fillStyle = (this.isWinner) ? '#10b981' : '#f43f5e'; // emerald-500 : rose-500
+            ctx.fillText(status + ' ' + score, width / 2, 140);
+
+            // Draw Grid
+            const startY = 170;
+            const boxSize = 50;
+            const gap = 10;
+            const totalRowWidth = (this.wordLength * boxSize) + ((this.wordLength - 1) * gap);
+            const startX = (width - totalRowWidth) / 2;
+
+            this.guessStatus.forEach((row, rowIndex) => {
+                const y = startY + (rowIndex * (boxSize + gap));
+                const colors = row.split(''); // 0,1,2
+                colors.forEach((colorCode, colIndex) => {
+                    const x = startX + (colIndex * (boxSize + gap));
+
+                    // color map matches current CSS themes
+                    let color = '#e2e8f0'; // slate-200 (gray)
+                    if (colorCode == '1') color = '#fcd34d'; // amber-300 (yellow)
+                    if (colorCode == '2') color = '#10b981'; // emerald-500 (green)
+
+                    ctx.fillStyle = color;
+                    // rounded rect?
+                    ctx.fillRect(x, y, boxSize, boxSize);
+
+                    // optional: border
+                    // ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+                    // ctx.strokeRect(x,y,boxSize,boxSize);
+                });
+            });
+
+            // Footer
+            ctx.font = '16px Lato';
+            ctx.fillStyle = '#94a3b8'; // slate-400
+            ctx.fillText('wordletta.com', width / 2, height - 20);
+
+            canvas.toBlob((blob) => {
+                resolve(blob);
+            }, 'image/png');
+        });
     },
     async logStats() {
         const duration = this.startTime ? Math.round((new Date() - this.startTime) / 1000) : 0;

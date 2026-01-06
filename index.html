@@ -16,13 +16,35 @@
     #app {
       display: none;
     }
+
+    @keyframes slideDown {
+      0% {
+        opacity: 0;
+        transform: translateY(-20px);
+        max-height: 0;
+        margin-bottom: 0;
+      }
+
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+        max-height: 100px;
+        /* Large enough to fit content */
+        margin-bottom: 0.5rem;
+        /* Match gap */
+      }
+    }
+
+    .animate-slide-down {
+      animation: slideDown 0.6s ease-out forwards;
+    }
   </style>
   <title>WordLetta</title>
 </head>
 
 <body class="bg-slate-50 font-['Lato']">
   <noscript>WordLetta requires JavaScript to run.</noscript>
-  <div id="app" x-data="wordletApp()" class="flex flex-col min-h-screen w-screen bg-slate-50 relative pb-20"
+  <div id="app" x-data="wordletApp()" class="flex flex-col min-h-screen w-screen bg-slate-50 relative pb-60"
     @keyup.window="keyPressed()">
 
     <!-- HEADER REMOVED -->
@@ -50,34 +72,36 @@
           </template>
         </div>
 
-        <!-- guesses (MOVED BELOW ACTIVE ROW) -->
-        <div class="flex flex-col items-center min-h-18 my-4 p-1 lg:p-3 gap-2 overflow-visible">
-          <template x-for="(guess, guessIndex) in guesses.slice().reverse()" :key="guesses.length - 1 - guessIndex">
-            <div class="flex gap-2 z-10 drop-shadow-md">
-              <template x-for="(guessLet, guessLetterIndex) in guess" :key="guessLet + guessLetterIndex">
-                <template x-if="guessStatus[guesses.length - 1 - guessIndex]">
-                  <span x-text="guessLet"
-                    class="font-['Ramabhadra'] flex justify-center items-center w-11 h-11 md:w-14 md:h-14 text-lg md:text-2xl font-bold rounded text-slate-800 reveal"
-                    :style="`animation-delay: ${(guessLetterIndex * 150)}ms`" :class="{
-                          'bg-slate-200': guessStatus[guesses.length - 1 - guessIndex] && guessStatus[guesses.length - 1 - guessIndex][guessLetterIndex] == '0',
-                          'bg-amber-300': guessStatus[guesses.length - 1 - guessIndex] && guessStatus[guesses.length - 1 - guessIndex][guessLetterIndex] == '1',
-                          'bg-emerald-500 text-white': guessStatus[guesses.length - 1 - guessIndex] && guessStatus[guesses.length - 1 - guessIndex][guessLetterIndex] == '2'
-                        }"></span>
-                </template>
+        <div class="flex flex-col items-center min-h-18 my-4 p-1 lg:p-3 gap-0 overflow-visible">
+          <template x-for="(guess, guessIndex) in guesses.slice().reverse()" :key="guess">
+            <!-- wrapper for smooth slide-in -->
+            <div class="w-full flex justify-center overflow-hidden animate-slide-down">
+              <div class="flex justify-center gap-2 z-10 drop-shadow-md py-1">
+                <template x-for="(guessLet, guessLetterIndex) in guess" :key="guessLet + guessLetterIndex">
+                  <template x-if="guessStatus[guesses.length - 1 - guessIndex]">
+                    <span x-text="guessLet"
+                      class="font-['Ramabhadra'] flex justify-center items-center w-11 h-11 md:w-14 md:h-14 text-lg md:text-2xl font-bold rounded text-slate-800 reveal"
+                      :style="`animation-delay: ${(guessLetterIndex * 150)}ms`" :class="{
+                            'bg-slate-200': guessStatus[guesses.length - 1 - guessIndex] && guessStatus[guesses.length - 1 - guessIndex][guessLetterIndex] == '0',
+                            'bg-amber-300': guessStatus[guesses.length - 1 - guessIndex] && guessStatus[guesses.length - 1 - guessIndex][guessLetterIndex] == '1',
+                            'bg-emerald-500 text-white': guessStatus[guesses.length - 1 - guessIndex] && guessStatus[guesses.length - 1 - guessIndex][guessLetterIndex] == '2'
+                          }"></span>
+                  </template>
 
-              </template>
+                </template>
+              </div>
             </div>
           </template>
         </div>
 
         <!-- keyboard -->
         <div :class="(isWinner || isLoser) ? 'opacity-40' : ''"
-          class="flex justify-center flex-wrap w-full border-0 gap-1.5 mt-8 mb-2 max-w-3xl mx-auto">
+          class="fixed bottom-20 left-0 right-0 z-20 flex justify-center flex-wrap w-full border-0 gap-1.5 py-4 max-w-3xl mx-auto bg-slate-50/90 backdrop-blur-sm border-t border-slate-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
           <template x-for="letter, i in alphabet" :key="i">
             <div x-ref="i" x-text="letter"
               class="noselect cursor-pointer overflow-none flex items-center justify-center w-8 md:w-10 h-10 md:h-12 text-lg md:text-2xl font-bold text-slate-700 bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 hover:from-white hover:to-slate-100 rounded shadow-sm transition-all duration-150 border border-slate-200"
               :class="{
-                  'opacity-50': alphabetStatus[i] === 0,
+                  'opacity-25': alphabetStatus[i] === 0,
                   'from-amber-200 via-amber-300 to-amber-400 text-white border-amber-400': alphabetStatus[i] == 1,
                   'from-emerald-300 via-emerald-400 to-emerald-500 text-white border-emerald-500': alphabetStatus[i] == 2
                 }" @click="letterClicked(letter)"></div>
@@ -217,7 +241,7 @@
 
                 <div class="grid place-items-center mt-6">
                   <button @click="newGame"
-                    class="hover:bg-slate-200 hover:text-slate-900 transition-colors py-2 px-6 text-center text-md font-bold text-slate-700 bg-slate-100 rounded-full border-2 border-slate-200">
+                    class="w-full hover:bg-indigo-600 hover:shadow-lg transition-all transform hover:-translate-y-0.5 py-3 px-6 text-center text-lg font-bold text-white bg-indigo-500 rounded-lg shadow-md">
                     Play Endless Mode
                   </button>
                 </div>
@@ -269,9 +293,14 @@
                     New Game
                   </button>
                   <div title="Share your score">
-                    <button x-ref="shareButton" @click="shareGame"
+                    <button x-ref="shareButton" @click="shareGame()"
                       class="py-2 px-6 text-sm font-bold text-white bg-indigo-500 hover:bg-indigo-600 rounded-lg shadow-md transition-all hover:-translate-y-0.5">
                       Share Score
+                    </button>
+                    <!-- Share Image Button -->
+                    <button @click="shareGame(true)" title="Share as Image"
+                      class="ml-2 py-2 px-3 text-sm font-bold text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg shadow-md transition-all hover:-translate-y-0.5">
+                      📸
                     </button>
                   </div>
                 </div>
@@ -328,6 +357,36 @@
                 </div>
               </div>
 
+              <!-- Guess Distribution -->
+              <div class="mb-6">
+                <h6 class="text-sm font-bold text-slate-700 mb-2 uppercase">Guess Distribution</h6>
+                <div class="flex flex-col gap-1 text-xs font-bold text-white">
+                  <template x-for="(count, index) in guessDistribution" :key="index">
+                    <div class="flex items-center gap-2">
+                      <span class="text-slate-400 w-2" x-text="index + 1"></span>
+                      <div class="bg-indigo-500 rounded p-1 min-w-[1.5rem] text-right"
+                        :style="`width: ${Math.max(5, (count / userWins) * 100)}%`"
+                        :class="{'bg-slate-300': count == 0}" x-text="count">
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+
+              <!-- Match History -->
+              <div class="max-h-48 overflow-y-auto border-t border-slate-100 pt-4">
+                <h6 class="text-sm font-bold text-slate-700 mb-2 uppercase">Match History</h6>
+                <ul class="text-sm">
+                  <template x-for="game in recentHistory" :key="game.timestamp">
+                    <li class="flex justify-between py-1 border-b border-slate-50 last:border-0">
+                      <span class="font-mono font-bold" :class="game.isWinner ? 'text-emerald-500' : 'text-rose-500'"
+                        x-text="game.answer"></span>
+                      <span class="text-slate-400 text-xs" x-text="game.numGuesses + '/6'"></span>
+                    </li>
+                  </template>
+                </ul>
+              </div>
+
               <div class="mt-6 border-t border-slate-100 pt-4 flex justify-between items-center">
                 <button @click="confirm('This will reset all personal stats.\n\nAre you sure?') ? resetStats : ''"
                   class="text-xs text-rose-500 hover:text-rose-700 hover:underline">Reset Stats</button>
@@ -356,8 +415,14 @@
       <div class="flex gap-4 items-center">
         <div x-show="endlessStats.length"><span class="cursor-pointer hover:text-white transition-colors"
             @click="showStatsModal = true">📊 stats</span></div>
-        <div class="font-bold text-slate-200 bg-slate-800 px-2 py-1 rounded"><span x-text="numGuesses"></span> / <span
-            x-text="totalGuesses"></span></div>
+        <template x-if="user">
+          <img :src="user.photoURL" class="w-8 h-8 rounded-full border border-slate-500 shadow-sm"
+            :title="user.displayName">
+        </template>
+        <template x-if="!user">
+          <button @click="showNewGameModal = true"
+            class="text-2xl grayscale opacity-50 hover:opacity-100 hover:grayscale-0 transition-all">👤</button>
+        </template>
       </div>
     </footer>
   </div>
