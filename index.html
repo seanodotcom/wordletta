@@ -294,11 +294,11 @@
 
                   <!-- Toggle Wrapper (Clickable) -->
                   <div class="flex flex-row items-center p-2 rounded-lg transition-colors"
-                    :class="wordLength <= 6 ? 'cursor-pointer hover:bg-slate-50' : 'opacity-100'"
-                    @click="(wordLength <= 6) ? hardMode = !hardMode : null">
+                    :class="(wordLength <= 6 && wordLength > 1) ? 'cursor-pointer hover:bg-slate-50' : 'opacity-100'"
+                    @click="(wordLength <= 6 && wordLength > 1) ? hardMode = !hardMode : null">
 
                     <!-- Lock Icon (only if forced) -->
-                    <template x-if="wordLength > 6">
+                    <template x-if="wordLength > 6 || wordLength == 1">
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-rose-600" viewBox="0 0 20 20"
                         fill="currentColor">
                         <path fill-rule="evenodd"
@@ -356,8 +356,14 @@
           class="fixed inset-0 z-30 flex items-center justify-center overflow-auto bg-slate-900 bg-opacity-40 backdrop-blur-sm">
           <!-- modal inner -->
           <div x-show="showShareModal" x-transition.opacity.duration.600ms
-            class="w-4/5 sm:w-2/3 md:w-1/2 p-8 mx-auto text-center bg-white rounded-xl shadow-2xl border-4"
-            :class="isWinner ? 'border-emerald-400' : 'border-slate-300'" @click.away="showShareModal = false">
+            class="w-4/5 sm:w-2/3 md:w-1/2 p-8 mx-auto text-center bg-white rounded-xl shadow-2xl border-4 transition-all duration-500"
+            :class="{
+              'border-emerald-400': isWinner && fireLevel == 0,
+              'border-amber-400 shadow-[0_0_25px_rgba(251,191,36,0.6)]': isWinner && fireLevel == 1,
+              'border-orange-500 shadow-[0_0_35px_rgba(249,115,22,0.8)]': isWinner && fireLevel == 2,
+              'border-rose-600 shadow-[0_0_50px_rgba(225,29,72,0.9)] scale-105': isWinner && fireLevel == 3,
+              'border-slate-300': !isWinner 
+            }" @click.away="showShareModal = false">
             <!-- Title / Close-->
             <div class="flex items-start justify-between absolute right-4 top-4">
               <button type="button" class="text-2xl font-bold text-slate-400 hover:text-slate-600 cursor-pointer"
@@ -422,7 +428,7 @@
 
             <!-- content -->
             <div class="text-slate-700">
-              <div class="grid grid-cols-4 gap-2 mb-4 text-center">
+              <div class="grid grid-cols-5 gap-2 mb-4 text-center">
                 <div class="flex flex-col bg-slate-50 p-1 rounded">
                   <span class="text-xl font-bold text-slate-900" x-text="userGames"></span>
                   <span class="text-[10px] uppercase text-slate-500">Played</span>
@@ -443,6 +449,28 @@
                     <template x-if="!userWins && !userLosses"><span>0%</span></template>
                   </span>
                   <span class="text-[10px] uppercase text-indigo-800">Win Rate</span>
+                </div>
+                <!-- Strk -->
+                <div class="flex flex-col p-1 rounded transition-all duration-300" :class="{
+                    'bg-slate-50': fireLevel == 0,
+                    'bg-amber-100 ring-2 ring-amber-300 shadow-md transform scale-105': fireLevel == 1,
+                    'bg-orange-100 ring-2 ring-orange-400 shadow-lg transform scale-110': fireLevel == 2,
+                    'bg-rose-100 ring-2 ring-rose-500 shadow-xl transform scale-110': fireLevel == 3,
+                  }">
+                  <span class="text-xl font-bold" :class="{
+                      'text-slate-900': fireLevel == 0,
+                      'text-amber-600': fireLevel == 1,
+                      'text-orange-600': fireLevel == 2,
+                      'text-rose-600': fireLevel == 3
+                    }">
+                    <span x-text="currentStreak"></span><span x-show="fireLevel > 0">🔥</span>
+                  </span>
+                  <span class="text-[10px] uppercase" :class="{
+                      'text-slate-500': fireLevel == 0,
+                      'text-amber-800': fireLevel == 1,
+                      'text-orange-800': fireLevel == 2,
+                      'text-rose-800': fireLevel == 3
+                    }">Streak</span>
                 </div>
               </div>
 
@@ -530,6 +558,22 @@
                 </button>
               </div>
 
+              <!-- Haptics -->
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="text-lg font-bold text-slate-700">Haptics</div>
+                  <div class="text-xs text-slate-400">Vibration feedback</div>
+                </div>
+                <!-- Toggle Switch -->
+                <button
+                  class="relative inline-flex items-center h-6 rounded-full w-11 transition-colors duration-200 focus:outline-none"
+                  :class="settings.haptics ? 'bg-indigo-500' : 'bg-slate-300'" @click="toggleHaptics">
+                  <span
+                    class="inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-200 ml-1"
+                    :class="settings.haptics ? 'translate-x-5' : 'translate-x-0'"></span>
+                </button>
+              </div>
+
               <!-- Keyboard Layout -->
               <div>
                 <div class="mb-3">
@@ -545,8 +589,24 @@
                   </template>
                 </div>
               </div>
-
             </div>
+
+            <!-- Debug Tools (Dev) -->
+            <div class="border-t border-slate-100 pt-4 mt-2">
+              <div class="text-xs font-bold text-slate-300 mb-2 uppercase">Debug Tools</div>
+              <div class="flex gap-2">
+                <button @click="debugSimulateStreak(7)"
+                  class="text-xs bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-600 px-3 py-2 rounded transition-colors">
+                  Simulate 7-Day Streak 🔥
+                </button>
+                <button @click="debugSimulateStreak(30)"
+                  class="text-xs bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-600 px-3 py-2 rounded transition-colors">
+                  30-Day
+                </button>
+              </div>
+            </div>
+
+
 
             <div class="mt-8 text-center">
               <div @click="showReleaseNotesModal = true; showSettingsModal = false"
@@ -569,7 +629,7 @@
             <!-- Title / Close-->
             <div class="flex items-start justify-between mb-6 border-b border-slate-100 pb-2">
               <h5 class="mr-3 text-slate-800 max-w-none text-xl font-bold">Release Notes <span
-                  class="text-sm font-normal text-slate-400">v1.5.0</span></h5>
+                  class="text-sm font-normal text-slate-400">v1.6.5</span></h5>
               <button type="button" class="text-2xl font-bold text-slate-400 hover:text-slate-600 cursor-pointer"
                 @click="showReleaseNotesModal = false">&times;</button>
             </div>
@@ -577,15 +637,24 @@
             <!-- content -->
             <div class="text-slate-700 text-sm overflow-y-auto max-h-[60vh] pr-2">
               <div class="mb-6">
-                <h4 class="font-bold text-indigo-600 mb-2 text-base">✨ Sweet Animations</h4>
+                <h4 class="font-bold text-rose-500 mb-2 text-base">🔥 Streaks & Haptics</h4>
                 <ul class="list-disc list-outside ml-4 space-y-1 text-slate-500">
-                  <li><strong>Morphing Tiles:</strong> Guesses now smoothy "drop" into place.</li>
-                  <li><strong>Layout Polish:</strong> Everything feels a little more fluid.</li>
+                  <li><strong>Streaks:</strong> Track your daily wins! Watch for the Fire Glow (Warm, Warmer, HOT) as
+                    your streak grows.</li>
+                  <li><strong>Haptics:</strong> Feel the clicks and clacks (Mobile). Toggle in Settings.</li>
+                  <li><strong>No more Ludicrous:</strong> Hard mode disabled for 1-letter games.</li>
                 </ul>
               </div>
 
               <div class="mb-6">
                 <h4 class="font-bold text-slate-400 mb-2 text-base">PREVIOUS UPDATES</h4>
+                <div class="opacity-75 mb-3">
+                  <h5 class="font-bold text-indigo-600 mb-1">v1.5.0</h5>
+                  <ul class="list-disc list-outside ml-4 space-y-1 text-slate-500 text-xs">
+                    <li>Sweet Animations & Morphing Tiles</li>
+                    <li>UI Polish</li>
+                  </ul>
+                </div>
                 <div class="opacity-75 mb-3">
                   <h5 class="font-bold text-indigo-600 mb-1">v1.4.3</h5>
                   <ul class="list-disc list-outside ml-4 space-y-1 text-slate-500 text-xs">

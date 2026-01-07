@@ -7,7 +7,7 @@ import confetti from "canvas-confetti";
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '1.5.0',
+    version: '1.6.5',
     user: null,
     wordLength: 6,
     totalGuesses: 6,
@@ -30,6 +30,7 @@ export default () => ({
     showToast: false,
     settings: {
         sound: true,
+        haptics: true,
         keyboardLayout: 'QWERTY'
     },
     LAYER_DEFS: {
@@ -151,6 +152,30 @@ export default () => ({
         const diff = Number(now) - Number(start)
         return Math.floor(diff / (1000 * 60 * 60 * 24))
     },
+    get currentStreak() {
+        if (!this.dailyStats) return 0;
+        let s = 0;
+        let day = this.dailyChallengeDay;
+        // If today is not played yet, check streak starting from yesterday
+        if (!this.dailyStats[day]) day--;
+
+        while (day >= 0) {
+            if (this.dailyStats[day] && this.dailyStats[day].isWinner) {
+                s++;
+                day--;
+            } else {
+                break;
+            }
+        }
+        return s;
+    },
+    get fireLevel() {
+        let s = this.currentStreak;
+        if (s >= 30) return 3; // "Hot"
+        if (s >= 7) return 2;  // "Warmer"
+        if (s >= 2) return 1;  // "Warm"
+        return 0;
+    },
     async fetchWordList(num, level = '') {
         if (!num) return false
         // NOTE: ensure a non-hardMode /words/*.js file exists
@@ -214,6 +239,8 @@ export default () => ({
                 this.letters[i] = ''
                 this.boxStatus[i] = ''
             }
+            // Disable Hard Mode for 1-letter games (it's silly)
+            if (len === 1) this.hardMode = false;
         })
 
         for (let i = 0; i < this.wordLength; i++) {
@@ -302,7 +329,13 @@ export default () => ({
                 // remove matches from answer array (to prevent dupe matches)
                 answerClone[answerClone.indexOf(g)] = null
                 // console.log(g, 'right!', 'box:', this.boxStatus[index])
+                // console.log(g, 'right!', 'box:', this.boxStatus[index])
                 this.playSound('match');
+                // Subtle haptic for finding a letter? Maybe too much. Let's stick to playSound triggering it, 
+                // but playSound('match') isn't defined in the main switch yet.
+                // Let's add it there or just call it directly.
+                // Actually, let's just leave it to the audio sync or add a tiny tick here.
+                // this.triggerHaptic('match'); 
             }
         });
         // console.log(answerClone)
@@ -353,6 +386,7 @@ export default () => ({
                 setTimeout(() => {
                     this.$nextTick(() => this.gameWon())
                     this.playSound('win');
+                    this.triggerHaptic('win');
                 }, 1200);
             }
             // CHECK: game over? (max # of guesses reached?)
@@ -360,6 +394,7 @@ export default () => ({
                 setTimeout(() => {
                     this.$nextTick(() => this.gameLost())
                     this.playSound('loss');
+                    this.triggerHaptic('loss');
                 }, 1200);
             }
 
@@ -428,6 +463,7 @@ export default () => ({
     showMessage(msg, duration = 2000) {
         this.toastMessage = msg;
         this.showToast = true;
+        this.triggerHaptic('invalid');
         setTimeout(() => { this.showToast = false }, duration);
     },
     backspace() {
@@ -466,8 +502,12 @@ export default () => ({
 
             const particleCount = 50 * (timeLeft / duration);
             // since particles fall down, start a bit higher than random
-            confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
-            confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+            let colors = (this.fireLevel >= 1) ? ['#fcd34d', '#f59e0b', '#ef4444'] : ['#26ccff', '#a25afd', '#ff5e7e', '#88ff5a', '#fcff42', '#ffa62d', '#ff36ff'];
+            // If fire level is max (30+), add some "smoke" or intense colors? 
+            // Stick to fire palette but maybe more intensity.
+
+            confetti(Object.assign({}, defaults, { particleCount, colors, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+            confetti(Object.assign({}, defaults, { particleCount, colors, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
         }, 250);
     },
     gameLost() {
@@ -709,6 +749,11 @@ export default () => ({
         this.settings.sound = !this.settings.sound;
         this.saveData();
     },
+    toggleHaptics() {
+        this.settings.haptics = !this.settings.haptics;
+        if (this.settings.haptics) this.triggerHaptic('enter'); // feedback
+        this.saveData();
+    },
     setKeyboardLayout(layoutName, save = true) {
         if (!this.LAYER_DEFS[layoutName]) return;
 
@@ -796,13 +841,6 @@ export default () => ({
             // Stabilized Key: Lower thud, slightly louder
             createClick(now, 1200, 0.05);
             createThock(now, 150, 0.3);
-        } else if (type === 'enter') {
-            osc.frequency.setValueAtTime(400, now);
-            osc.frequency.exponentialRampToValueAtTime(200, now + 0.1);
-            gainNode.gain.setValueAtTime(0.2, now);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-            osc.start(now);
-            osc.stop(now + 0.1);
         } else if (type === 'backspace') {
             // Subtle tick / paper-ish sound
             osc.frequency.setValueAtTime(800, now);
@@ -845,6 +883,38 @@ export default () => ({
             osc.start(now);
             osc.stop(now + 0.5);
         }
+
+        // Haptic Feedback Trigger (Sync with sound)
+        this.triggerHaptic(type);
+    },
+
+    triggerHaptic(type) {
+        // Check for support & settings
+        if (!navigator.vibrate || !this.settings.haptics) return;
+
+        switch (type) {
+            case 'click':
+                navigator.vibrate(5); // Ultra short tick
+                break;
+            case 'enter':
+                navigator.vibrate(10); // Slightly stronger
+                break;
+            case 'backspace':
+                navigator.vibrate(5);
+                break;
+            case 'match': // row evaluation match
+                navigator.vibrate(2);
+                break;
+            case 'win':
+                navigator.vibrate([50, 50, 50, 50, 100]); // Pulse
+                break;
+            case 'loss':
+                navigator.vibrate([100, 50, 100]); // Double thud
+                break;
+            case 'invalid':
+                navigator.vibrate(20);
+                break;
+        }
     },
 
     playNote(freq, delay, duration) {
@@ -863,6 +933,49 @@ export default () => ({
 
         osc.start(now);
         osc.stop(now + duration);
+        osc.start(now);
+        osc.stop(now + duration);
+    },
+
+    // DEBUG TOOLS
+    debugSimulateStreak(days = 7) {
+        // Reset valid stats for clean slate debug
+        this.dailyStats = [];
+
+        const todayIndex = this.dailyChallengeDay;
+
+        for (let i = 0; i < days; i++) {
+            let dayIndex = todayIndex - i;
+            if (dayIndex >= 0) {
+                this.dailyStats[dayIndex] = {
+                    "timestamp": new Date().toISOString(), // fake timestamp
+                    "isWinner": true,
+                    "numGuesses": Math.floor(Math.random() * 6) + 1,
+                    "wordLength": 6,
+                    "hardMode": false,
+                    "answer": "DEBUG",
+                    "guesses": ["DEBUG"],
+                    "duration": 60
+                }
+            }
+        }
+
+        // Setup state for "Win" screen
+        this.dailyChallengeComplete = true;
+        this.isWinner = true; // force win state for modal styling
+        // this.numGuesses is a getter, so we need to fake the guesses array
+        this.guesses = ['DEBUG1', 'DEBUG2', 'WINNER'];
+        this.kudos[3] = "Simulated Win!";
+
+        this.showMessage(`Simulated ${days} Day Streak! 🔥`, 3000);
+
+        // Show Win Screen & Confetti
+        this.showSettingsModal = false;
+        // Delay slightly for modal transition
+        setTimeout(() => {
+            this.showShareModal = true;
+            this.confettiWin();
+        }, 300);
     }
 
 })
