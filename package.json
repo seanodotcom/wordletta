@@ -1,6 +1,6 @@
 {
   "name": "wordletapp",
-  "version": "1.4.6",
+  "version": "1.4.7",
   "scripts": {
     "dev": "vite --host",
     "build": "vite build",

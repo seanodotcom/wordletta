@@ -7,7 +7,7 @@ import confetti from "canvas-confetti";
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '1.4.6',
+    version: '1.4.7',
     user: null,
     wordLength: 6,
     totalGuesses: 6,

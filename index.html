@@ -98,8 +98,8 @@
 
               <!-- Cursor -->
               <div
-                x-show="cursor === i && !isWinner && !isLoser && !showNewGameModal && !dailyChallengeComplete && !isClearing"
-                class="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-4/5 h-1.5 bg-slate-400 rounded-full animate-pulse-cursor">
+                x-show="cursor === i && !isWinner && !isLoser && !showNewGameModal && (!dailyChallenge || !dailyChallengeComplete) && !isClearing"
+                class="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-3/4 h-1.5 bg-slate-300/50 rounded-full animate-pulse-cursor">
               </div>
             </div>
           </template>
@@ -326,7 +326,7 @@
                 </div>
 
                 <div class="grid place-items-center mt-4">
-                  <button @click="newGame"
+                  <button @click="dailyChallenge = false; newGame()"
                     class="h-12 flex items-center justify-center w-full hover:bg-indigo-600 hover:shadow-lg transition-all transform hover:-translate-y-0.5 py-2 px-6 text-center text-lg font-bold text-white bg-indigo-500 rounded-lg shadow-md">
                     <span class="text-3xl mr-3 font-bold leading-none mb-1">∞</span> Play Endless Challenge
                   </button>
