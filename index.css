@@ -3,68 +3,200 @@
 @tailwind utilities;
 
 .noselect {
-    -webkit-touch-callout: none; /* iOS Safari */
-    -webkit-user-select: none; /* Safari */
-    -khtml-user-select: none; /* Konqueror HTML */
-    -moz-user-select: none; /* Old versions of Firefox */
-    -ms-user-select: none; /* Internet Explorer/Edge */
-    user-select: none; /* Non-prefixed version, currently supported by Chrome, Edge, Opera and Firefox */
-  }
-  body { touch-action: pan-y; }
-  button { touch-action: manipulation; }
+  -webkit-touch-callout: none;
+  /* iOS Safari */
+  -webkit-user-select: none;
+  /* Safari */
+  -khtml-user-select: none;
+  /* Konqueror HTML */
+  -moz-user-select: none;
+  /* Old versions of Firefox */
+  -ms-user-select: none;
+  /* Internet Explorer/Edge */
+  user-select: none;
+  /* Non-prefixed version, currently supported by Chrome, Edge, Opera and Firefox */
+}
 
-  .filled { animation: zoom 0.3s; }
-  .winner { animation: jump 0.8s; }
+body {
+  touch-action: pan-y;
+}
 
-  @keyframes zoom {
-    0% {
-      transform: scale(1.1);
-    }
-    100% {
-      transform: scale(1);
-    }
-  }
-  @keyframes jump {
-    0% {
-      transform: translateY(0px);
-    }
-    20% {
-      transform: translateY(6px);
-    }
-    60% {
-      transform: translateY(-18px);
-    }
-    90% {
-      transform: translateY(6px);
-    }
-    100% {
-      transform: translateY(0px);
-    }
+button {
+  touch-action: manipulation;
+}
+
+.filled {
+  animation: zoom 0.3s;
+}
+
+.winner {
+  animation: jump 0.8s;
+}
+
+@keyframes zoom {
+  0% {
+    transform: scale(1.1);
   }
 
-  /* Flip animation for reveals */
-  .reveal {
-      animation: flip 0.2s ease-in-out forwards;
+  100% {
+    transform: scale(1);
   }
-  
-  @keyframes flip {
-    0% { transform: scaleY(1); }
-    50% { transform: scaleY(0); }
-    100% { transform: scaleY(1); }
+}
+
+@keyframes jump {
+  0% {
+    transform: translateY(0px);
   }
 
-  /* Custom Scrollbar for Webkit */
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+  20% {
+    transform: translateY(6px);
   }
-  ::-webkit-scrollbar-track {
-    background: transparent; 
+
+  60% {
+    transform: translateY(-18px);
   }
-  ::-webkit-scrollbar-thumb {
-    background: #cbd5e1; /* slate-300 */
-    border-radius: 3px;
+
+  90% {
+    transform: translateY(6px);
   }
-  ::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8; /* slate-400 */
+
+  100% {
+    transform: translateY(0px);
   }
+}
+
+/* Flip animation for reveals */
+.reveal {
+  animation: flip 0.2s ease-in-out forwards;
+}
+
+@keyframes flip {
+  0% {
+    transform: scaleY(1);
+  }
+
+  50% {
+    transform: scaleY(0);
+  }
+
+  100% {
+    transform: scaleY(1);
+  }
+}
+
+/* Custom Scrollbar for Webkit */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  /* slate-300 */
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+  /* slate-400 */
+}
+
+/* High Contrast Theme Overrides */
+.contrast,
+.contrast body {
+  background-color: #000000 !important;
+  color: #f59e0b !important;
+  /* amber-500 (Darker Yellow) */
+}
+
+.contrast .bg-white,
+.contrast .bg-slate-50,
+.contrast .bg-slate-900 {
+  background-color: #000000 !important;
+  border: 2px solid #f59e0b !important;
+  /* distinct border */
+  color: #f59e0b !important;
+}
+
+.contrast .text-slate-800,
+.contrast .text-slate-700,
+.contrast .text-slate-500,
+.contrast .text-slate-400,
+.contrast .text-slate-100,
+.contrast .dark\:text-slate-400,
+.contrast .dark\:text-slate-100 {
+  color: #f59e0b !important;
+}
+
+.contrast .letter {
+  border-color: #f59e0b !important;
+  color: #f59e0b !important;
+}
+
+.contrast .letter.filled {
+  background-color: #000 !important;
+  border-color: #f59e0b !important;
+}
+
+.contrast .letter.winner {
+  background-color: #f59e0b !important;
+  color: #000 !important;
+  border-color: #f59e0b !important;
+}
+
+.contrast input,
+.contrast .letter input,
+.contrast .filled input {
+  color: #f59e0b !important;
+  -webkit-text-fill-color: #f59e0b !important;
+  background-color: transparent !important;
+  /* Force transparent to reveal .filled bg */
+}
+
+/* Winner input needs to be black on yellow */
+.contrast .letter.winner input {
+  color: #000 !important;
+  -webkit-text-fill-color: #000 !important;
+}
+
+/* Keyboard High Contrast */
+.contrast .noselect:not(.bg-indigo-500) {
+  background: #000 !important;
+  color: #f59e0b !important;
+  border: 1px solid #f59e0b !important;
+}
+
+.contrast .noselect.bg-indigo-500 {
+  /* Enter key */
+  background: #f59e0b !important;
+  color: #000 !important;
+  border: 1px solid #f59e0b !important;
+}
+
+/* Override key colors for contrast */
+.contrast .key-btn {
+  background-color: #333 !important;
+  color: #fbbf24 !important;
+  border: 1px solid #fbbf24 !important;
+}
+
+.contrast .key-btn.correct {
+  background-color: #fbbf24 !important;
+  color: #000 !important;
+}
+
+.contrast .key-btn.present {
+  background-color: #3b82f6 !important;
+  /* Blue for present vs Yellow for correct */
+  color: #fff !important;
+}
+
+.contrast .key-btn.absent {
+  background-color: #000 !important;
+  border-color: #333 !important;
+  opacity: 0.5;
+}

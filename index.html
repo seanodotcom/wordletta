@@ -70,12 +70,60 @@
   <title>WordLetta</title>
 </head>
 
-<body class="bg-slate-50 font-['Lato']">
+<body class="bg-slate-50 dark:bg-slate-900 font-['Lato'] transition-colors duration-300">
   <noscript>WordLetta requires JavaScript to run.</noscript>
-  <div id="app" x-data="wordletApp()" class="flex flex-col min-h-screen w-full bg-slate-50 relative pb-60"
-    @keyup.window="keyPressed()">
+  <div id="app" x-data="wordletApp()"
+    class="flex flex-col min-h-screen w-full bg-slate-50 dark:bg-slate-900 relative pb-60 transition-colors duration-300"
+    @keyup.window="keyPressed(); resetIdleTimer()" @click.window="resetIdleTimer()"
+    @mousemove.window.throttle.1000ms="resetIdleTimer()">
 
-    <!-- HEADER REMOVED -->
+    <!-- Header -->
+    <header class="flex-none p-4 pb-2 border-b border-indigo-50 dark:border-slate-800 bg-white dark:bg-slate-900 z-20">
+      <div class="max-w-lg mx-auto flex items-center justify-between">
+        <!-- Left: Logo & Branding -->
+        <div class="flex items-center gap-2">
+          <img src="/logo.png" alt="Logo" class="h-8 w-8 object-contain">
+          <h1 class="font-['Ramabhadra'] text-xl tracking-wider text-slate-700 dark:text-slate-200 hidden xs:block">
+            WORDLETTA</h1>
+        </div>
+
+        <!-- Right: Timer & Settings -->
+        <div class="flex items-center gap-3">
+          <!-- Timer Pill -->
+          <div
+            class="flex items-center gap-2 text-xs sm:text-sm font-mono font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 pl-3 pr-2 py-1.5 rounded-full cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border border-transparent hover:border-slate-300 dark:hover:border-slate-600"
+            @click="togglePause()" title="Pause Game">
+            <span x-text="headerTime">0s</span>
+            <!-- Pause Icon (Only show if running) -->
+            <span x-show="timerStarted && !isWinner && !isLoser && !isPaused" class="text-slate-400 flex items-center">
+              <img src="/icons/pause.svg"
+                class="w-4 h-4 opacity-60 hover:opacity-100 transition-opacity dark:invert contrast:invert">
+            </span>
+            <!-- Play Icon (Show if paused) -->
+            <span x-show="isPaused" class="text-indigo-500 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                  clip-rule="evenodd" />
+              </svg>
+            </span>
+          </div>
+
+          <!-- Settings Gear -->
+          <button @click="showSettingsModal = true"
+            class="text-slate-400 dark:text-slate-500 hover:text-indigo-500 transition-colors p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full"
+            title="Settings">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+              stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
 
     <!-- Toast Notification -->
     <div x-show="showToast" x-transition:enter="transition ease-out duration-300"
@@ -94,14 +142,14 @@
         <div class="flex justify-center items-center row guess py-1 md:py-2 gap-1 sm:gap-2 lg:gap-6 xl:gap-8 border-0">
           <template x-for="w, i in wordLength" :key="i">
             <div
-              class="flex letter justify-center items-center overflow-hidden bg-white focus:outline-none max-w-48 border-2 border-slate-300 text-slate-800 rounded-md shadow-sm transition-all duration-300 transform"
+              class="flex letter justify-center items-center overflow-hidden bg-slate-200 dark:bg-slate-700 focus:outline-none max-w-48 border-2 border-slate-300 dark:border-slate-500 text-slate-800 dark:text-slate-50 rounded-md shadow-sm transition-all duration-300 transform"
               :class="{
-                  'filled border-slate-500 scale-105' : letters[i],
+                  'filled border-slate-500 dark:border-slate-400 scale-105' : letters[i],
                   'winner' : isWinner,
                   'opacity-50' : (isWinner || isLoser)
                 }">
               <input x-ref="box" :rel="i" x-model="letters[i]" maxlength="1"
-                class="font-['Ramabhadra'] inline-block font-bold text-3xl sm:text-4xl md:text-6xl lg:text-8xl text-center text-slate-900 h-14 w-14 sm:h-20 sm:w-20 md:h-24 md:w-24 lg:h-40 lg:w-48 lg:p-1 bg-transparent"
+                class="font-['Ramabhadra'] inline-block font-bold text-3xl sm:text-4xl md:text-6xl lg:text-8xl text-center text-slate-900 dark:text-white h-14 w-14 sm:h-20 sm:w-20 md:h-24 md:w-24 lg:h-40 lg:w-48 lg:p-1 bg-transparent"
                 :class="{
                     'bg-amber-400 border-amber-500': boxStatus[i] == 1,
                     'bg-emerald-500 border-emerald-600 text-white': boxStatus[i] == 2,
@@ -111,7 +159,7 @@
               <!-- Cursor -->
               <div
                 x-show="cursor === i && !isWinner && !isLoser && !showNewGameModal && (!dailyChallenge || !dailyChallengeComplete) && !isClearing"
-                class="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-3/4 h-1.5 bg-slate-300/50 rounded-full animate-pulse-cursor">
+                class="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-3/4 h-1.5 bg-slate-300/50 dark:bg-slate-500/50 rounded-full animate-pulse-cursor">
               </div>
             </div>
           </template>
@@ -144,7 +192,9 @@
               x-transition:leave-end="max-h-0 opacity-0 transform translate-y-4">
               <div class="flex justify-center gap-2">
                 <template x-for="j in wordLength" :key="j">
-                  <div class="w-11 h-11 md:w-14 md:h-14 border-2 border-slate-300 rounded bg-slate-100"></div>
+                  <div
+                    class="w-11 h-11 md:w-14 md:h-14 border-2 border-slate-300 dark:border-slate-500 rounded bg-slate-200 dark:bg-slate-700">
+                  </div>
                 </template>
               </div>
             </div>
@@ -153,7 +203,7 @@
 
         <!-- keyboard -->
         <div :class="(isWinner || isLoser) ? 'opacity-40' : ''"
-          class="fixed bottom-14 left-0 right-0 z-20 flex flex-col items-center justify-center w-full border-0 gap-2 py-4 px-3.5 max-w-3xl mx-auto bg-slate-50/90 backdrop-blur-sm border-t border-slate-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+          class="fixed bottom-14 left-0 right-0 z-20 flex flex-col items-center justify-center w-full border-0 gap-2 py-4 px-3.5 max-w-3xl mx-auto bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-sm border-t border-slate-200 dark:border-slate-800 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
 
           <template x-for="(row, rowIndex) in keyboardRows" :key="rowIndex">
             <div class="flex justify-center gap-1 w-full">
@@ -167,7 +217,7 @@
 
               <template x-for="letter in row" :key="letter">
                 <div x-text="letter"
-                  class="noselect cursor-pointer overflow-none flex-1 max-w-[2rem] md:max-w-[2.5rem] flex items-center justify-center h-10 md:h-12 text-lg md:text-2xl font-bold text-slate-700 bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 hover:from-white hover:to-slate-100 rounded shadow-sm transition-all duration-150 border border-slate-200"
+                  class="noselect cursor-pointer overflow-none flex-1 max-w-[2rem] md:max-w-[2.5rem] flex items-center justify-center h-10 md:h-12 text-lg md:text-2xl font-bold text-slate-700 dark:text-slate-200 bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 dark:from-slate-700 dark:via-slate-800 dark:to-slate-900 hover:from-white hover:to-slate-100 dark:hover:from-slate-600 dark:hover:to-slate-800 rounded shadow-sm transition-all duration-150 border border-slate-200 dark:border-slate-600"
                   :class="{
                         'opacity-25': alphabetStatus[alphabet.indexOf(letter)] === 0,
                         'from-amber-200 via-amber-300 to-amber-400 text-white border-amber-400': alphabetStatus[alphabet.indexOf(letter)] == 1,
@@ -177,7 +227,7 @@
 
               <template x-if="rowIndex === keyboardRows.length - 1">
                 <div @click="backspace" :class="cursor == 0 ? 'opacity-30' : ''"
-                  class="noselect cursor-pointer overflow-none flex items-center justify-center w-auto flex-[1.5] max-w-[3.5rem] md:max-w-[4.5rem] h-10 md:h-12 text-lg md:text-2xl font-bold text-slate-700 bg-gradient-to-br from-slate-100 to-slate-300 hover:from-slate-50 hover:to-slate-200 rounded shadow-sm border border-slate-300">
+                  class="noselect cursor-pointer overflow-none flex items-center justify-center w-auto flex-[1.5] max-w-[3.5rem] md:max-w-[4.5rem] h-10 md:h-12 text-lg md:text-2xl font-bold text-slate-700 dark:text-slate-200 bg-gradient-to-br from-slate-100 to-slate-300 dark:from-slate-700 dark:to-slate-800 hover:from-slate-50 hover:to-slate-200 dark:hover:from-slate-600 dark:hover:to-slate-700 rounded shadow-sm border border-slate-300 dark:border-slate-600">
                   ⌫</div>
               </template>
 
@@ -548,7 +598,6 @@
                   <div class="text-lg font-bold text-slate-700">Sound</div>
                   <div class="text-xs text-slate-400">Enable game sounds</div>
                 </div>
-                <!-- Toggle Switch -->
                 <button
                   class="relative inline-flex items-center h-6 rounded-full w-11 transition-colors duration-200 focus:outline-none"
                   :class="settings.sound ? 'bg-indigo-500' : 'bg-slate-300'" @click="toggleSound">
@@ -559,26 +608,49 @@
               </div>
 
               <!-- Haptics -->
-              <div class="flex items-center justify-between">
+              <div class="flex items-center justify-between" :class="{'opacity-50': !isMobile}">
                 <div>
                   <div class="text-lg font-bold text-slate-700">Haptics</div>
-                  <div class="text-xs text-slate-400">Vibration feedback</div>
+                  <div class="text-xs text-slate-400"
+                    x-text="isMobile ? 'Vibration feedback' : 'Not available on desktop'"></div>
                 </div>
                 <!-- Toggle Switch -->
                 <button
                   class="relative inline-flex items-center h-6 rounded-full w-11 transition-colors duration-200 focus:outline-none"
-                  :class="settings.haptics ? 'bg-indigo-500' : 'bg-slate-300'" @click="toggleHaptics">
+                  :class="settings.haptics && isMobile ? 'bg-indigo-500' : 'bg-slate-300'"
+                  @click="if(isMobile) toggleHaptics()" :disabled="!isMobile"
+                  :style="!isMobile ? 'cursor: not-allowed' : ''">
                   <span
                     class="inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-200 ml-1"
-                    :class="settings.haptics ? 'translate-x-5' : 'translate-x-0'"></span>
+                    :class="settings.haptics && isMobile ? 'translate-x-5' : 'translate-x-0'"></span>
                 </button>
+              </div>
+
+              <!-- Theme Selector -->
+              <div>
+                <div class="mb-3">
+                  <div class="text-lg font-bold text-slate-700">Theme</div>
+                </div>
+                <div class="flex bg-slate-100 p-1 rounded-lg">
+                  <button @click="setTheme('light')" class="flex-1 py-2 text-xs font-bold rounded-md transition-all"
+                    :class="settings.theme === 'light' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'">
+                    Light
+                  </button>
+                  <button @click="setTheme('dark')" class="flex-1 py-2 text-xs font-bold rounded-md transition-all"
+                    :class="settings.theme === 'dark' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'">
+                    Dark
+                  </button>
+                  <button @click="setTheme('contrast')" class="flex-1 py-2 text-xs font-bold rounded-md transition-all"
+                    :class="settings.theme === 'contrast' ? 'bg-black text-yellow-400 shadow-sm' : 'text-slate-500 hover:text-slate-700'">
+                    Contrast
+                  </button>
+                </div>
               </div>
 
               <!-- Keyboard Layout -->
               <div>
                 <div class="mb-3">
                   <div class="text-lg font-bold text-slate-700">Keyboard Layout</div>
-                  <div class="text-xs text-slate-400">Choose your preferred layout</div>
                 </div>
 
                 <div class="flex bg-slate-100 p-1 rounded-lg">
@@ -589,6 +661,7 @@
                   </template>
                 </div>
               </div>
+
             </div>
 
             <!-- Debug Tools (Dev) -->
@@ -665,6 +738,26 @@
                     <li>Enhanced Sharing (Grid + Fun Phrases)</li>
                   </ul>
                 </div>
+                <!-- Release Notes Content -->
+                <div class="space-y-4">
+                  <div class="border-l-4 border-indigo-500 pl-4 py-1">
+                    <h3 class="font-bold text-lg text-slate-800">v1.7.0: Themes & Time!</h3>
+                    <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
+                      <li>🎨 <b>Themes:</b> Added Dark Mode & High Contrast Mode.</li>
+                      <li>⏱️ <b>Timer:</b> New m:ss format with Pause feature.</li>
+                      <li>⏸️ <b>Auto-Pause:</b> Game parses after 1 min of inactivity.</li>
+                      <li>💅 <b>Polish:</b> Restored Classic Logo (transparent!) & clearer grid.</li>
+                    </ul>
+                  </div>
+                  <div class="border-l-4 border-slate-300 pl-4 py-1 opacity-75">
+                    <h3 class="font-bold text-lg text-slate-800">v1.6.0: Feel the Heat</h3>
+                    <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
+                      <li>🔥 <b>Streaks:</b> Track your daily wins!</li>
+                      <li>📳 <b>Haptics:</b> Vibration feedback on mobile.</li>
+                      <li>🌋 <b>Fire Mode:</b> Board glows hot on high streaks.</li>
+                    </ul>
+                  </div>
+                </div>
                 <div class="opacity-75">
                   <h5 class="font-bold text-indigo-600 mb-1">v1.3.0</h5>
                   <ul class="list-disc list-outside ml-4 space-y-1 text-slate-500 text-xs">
@@ -705,8 +798,6 @@
       </div>
 
       <div class="flex gap-6 items-center pr-2">
-        <div class="cursor-pointer hover:text-white hover:scale-110 transition-all text-xl"
-          @click="showSettingsModal = true" title="Settings">⚙️</div>
         <div>
           <span class="cursor-pointer hover:text-white hover:scale-110 transition-all text-xl"
             @click="showStatsModal = true" title="Stats">📊</span>
@@ -721,6 +812,21 @@
         </template>
       </div>
     </footer>
+    <!-- PAUSE MODAL -->
+    <div x-show="isPaused" style="display: none;" x-transition.opacity.duration.300ms
+      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-md">
+      <div
+        class="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-2xl text-center transform scale-100 border border-slate-200 dark:border-slate-700">
+        <div class="text-6xl mb-4">⏸️</div>
+        <h2 class="text-2xl font-black text-slate-800 dark:text-white mb-2">Game Paused</h2>
+        <p class="text-slate-500 dark:text-slate-400 mb-6 font-mono text-xl" x-text="formattedTime"></p>
+        <button @click="togglePause()"
+          class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-colors">
+          RESUME
+        </button>
+      </div>
+    </div>
+
   </div>
 </body>
 

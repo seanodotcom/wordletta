@@ -7,7 +7,7 @@ import confetti from "canvas-confetti";
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '1.6.6',
+    version: '1.7.0',
     user: null,
     wordLength: 6,
     totalGuesses: 6,
@@ -31,8 +31,66 @@ export default () => ({
     settings: {
         sound: true,
         haptics: true,
+        sound: true,
+        haptics: true,
+        theme: 'light', // 'light', 'dark', 'contrast'
+        sound: true,
+        haptics: true,
+        theme: 'light', // 'light', 'dark', 'contrast'
         keyboardLayout: 'QWERTY'
     },
+    // Timer State
+    gameTime: 0,
+    timerInterval: null,
+    isPaused: false,
+    timerStarted: false,
+    pausedByModal: false,
+    idleTimeout: null,
+
+    resetIdleTimer() {
+        if (this.idleTimeout) clearTimeout(this.idleTimeout);
+        if (this.timerStarted && !this.isPaused && !this.isWinner && !this.isLoser) {
+            this.idleTimeout = setTimeout(() => {
+                this.togglePause();
+            }, 60000); // 1 minute
+        }
+    },
+
+    init() {
+        this.loadData();
+        this.$watch('showSettingsModal', (value) => {
+            if (value) {
+                // Modal Opening: Pause if running
+                if (this.timerStarted && !this.isPaused && !this.isWinner && !this.isLoser) {
+                    this.togglePause();
+                    this.pausedByModal = true;
+                }
+            } else {
+                // Modal Closing: Resume if it was paused by modal
+                if (this.timerStarted && this.isPaused && !this.isWinner && !this.isLoser) {
+                    if (this.pausedByModal) {
+                        this.togglePause();
+                        this.pausedByModal = false;
+                    }
+                }
+            }
+        });
+
+        this.$watch('showReleaseNotesModal', (value) => {
+            if (value) {
+                if (this.timerStarted && !this.isPaused && !this.isWinner && !this.isLoser) {
+                    this.togglePause();
+                    this.pausedByModal = true;
+                }
+            } else {
+                if (this.timerStarted && this.isPaused && !this.isWinner && !this.isLoser && this.pausedByModal) {
+                    this.togglePause();
+                    this.pausedByModal = false;
+                }
+            }
+        });
+    },
+
     LAYER_DEFS: {
         'QWERTY': [
             ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
@@ -144,6 +202,11 @@ export default () => ({
     get userWins() { return this.endlessStats && this.endlessStats.filter(g => g.isWinner).length },
     get userLosses() { return this.endlessStats && this.endlessStats.filter(g => !g.isWinner).length },
     get userWinPct() { return Math.round((this.userWins / this.userGames) * 100) },
+    get isMobile() {
+        return (('ontouchstart' in window) ||
+            (navigator.maxTouchPoints > 0) ||
+            (navigator.msMaxTouchPoints > 0));
+    },
     get guess() { return this.letters.length ? this.letters.join('').toLowerCase() : null },
     get numGuesses() { return this.guesses ? this.guesses.length : 0 },
     get dailyChallengeDay() {
@@ -213,7 +276,7 @@ export default () => ({
                     this.syncStats(); // This will also sync settings
                 } else {
                     this.user = null;
-                    this.loadLocalSettings();
+                    this.loadData();
                     const local = localStorage.getItem('_x_endlessStats');
                     if (local) this.endlessStats = JSON.parse(local);
                 }
@@ -241,6 +304,8 @@ export default () => ({
             }
             // Disable Hard Mode for 1-letter games (it's silly)
             if (len === 1) this.hardMode = false;
+            // Reset cursor to 0 to align with new letters array
+            this.cursor = 0;
         })
 
         for (let i = 0; i < this.wordLength; i++) {
@@ -276,6 +341,9 @@ export default () => ({
         this.cursor = 0
         this.isWinner = false
         this.isLoser = false
+        this.stopTimer();
+        this.timerStarted = false;
+        this.gameTime = 0;
     },
     keyPressed() {
         // handle keyboard events
@@ -427,6 +495,9 @@ export default () => ({
         // or if game is over, do nothing
         if (this.isWinner || this.isLoser) return
 
+        this.startTimer();
+
+
         // cursor at beginning? clear all other letters & box statuses (colors)
         if (this.cursor == 0) {
             for (let i = 0; i < this.wordLength; i++) {
@@ -480,6 +551,7 @@ export default () => ({
         this.isReadyToCheck = false
     },
     gameWon() {
+        this.stopTimer();
         // window.alert('You got it in ' + this.numGuesses + ((this.numGuesses < this.wordLength) ? '!' : '.') + ' Congrats!\n\nThe answer was: ' + this.answer)
         this.isWinner = true
         this.logStats()
@@ -512,6 +584,7 @@ export default () => ({
     },
     gameLost() {
         // window.alert('Sorry, the answer was: ' + this.answer + '\n\nTry again!')
+        this.stopTimer();
         this.isLoser = true
         this.logStats()
         this.showShareModal = true
@@ -708,34 +781,91 @@ export default () => ({
             this.endlessStats = data.history || [];
             if (data.settings) {
                 this.settings = { ...this.settings, ...data.settings };
+                // Apply theme if loaded
+                if (this.settings.theme) this.updateBodyClass();
             }
         } else {
             // New user doc
             await setDoc(userRef, {
                 email: this.user.email,
-                history: this.endlessStats, // push any local stats? 
+                history: this.endlessStats,
                 settings: this.settings
             });
         }
-        // Always apply layout (defaults or loaded)
-        this.setKeyboardLayout(this.settings.keyboardLayout, false);
     },
+    setTheme(themeName) {
+        this.settings.theme = themeName;
+        this.updateBodyClass();
+        this.saveData();
+    },
+    updateBodyClass() {
+        // Don't overwrite className completely! Just toggle theme classes on body.
+        document.body.classList.remove('dark', 'contrast');
+        if (this.settings.theme === 'dark') document.body.classList.add('dark');
+        if (this.settings.theme === 'contrast') document.body.classList.add('contrast');
+    },
+    // Timer Methods
+    startTimer() {
+        if (this.timerStarted || this.isWinner || this.isLoser) return;
+        this.timerStarted = true;
+        this.gameTime = 0;
+        this.timerInterval = setInterval(() => {
+            if (!this.isPaused) {
+                this.gameTime += 0.1;
+            }
+        }, 100);
+        this.resetIdleTimer();
+    },
+    stopTimer() {
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+        }
+        if (this.idleTimeout) {
+            clearTimeout(this.idleTimeout);
+            this.idleTimeout = null;
+        }
+    },
+    togglePause() {
+        if (!this.timerStarted || this.isWinner || this.isLoser) return;
+        this.isPaused = !this.isPaused;
+
+        if (this.isPaused) {
+            if (this.idleTimeout) clearTimeout(this.idleTimeout);
+        } else {
+            this.resetIdleTimer();
+        }
+    },
+    get formattedTime() {
+        return this.gameTime.toFixed(1) + 's';
+    },
+    get headerTime() {
+        const totalSeconds = Math.floor(this.gameTime);
+        const m = Math.floor(totalSeconds / 60);
+        const s = totalSeconds % 60;
+        // Show m:ss (e.g. 0:01, 1:05)
+        return `${m}:${s.toString().padStart(2, '0')}`;
+    },
+
     resetStats() {
         this.endlessStats = []
         this.dailyStats = []
         this.dailyChallengeComplete = false
     },
-    loadLocalSettings() {
-        const stored = localStorage.getItem('wordletta_settings');
-        if (stored) {
+    // loadLocalSettings removed (duplicate). logic moved to loadData
+    // ...
+    loadData() {
+        const local = localStorage.getItem('wordletta_settings');
+        if (local) {
             try {
-                const parsed = JSON.parse(stored);
-                // merge to ensure new keys exist
+                const parsed = JSON.parse(local);
                 this.settings = { ...this.settings, ...parsed };
-            } catch (e) { console.error('Error loading settings', e) }
+                if (this.settings.theme) this.updateBodyClass();
+            } catch (e) {
+                console.error('Error loading settings', e);
+            }
         }
-        // Apply layout
-        this.setKeyboardLayout(this.settings.keyboardLayout, false); // false = don't save again
+        this.setKeyboardLayout(this.settings.keyboardLayout, false);
     },
     saveData() {
         // Consolidated save function
