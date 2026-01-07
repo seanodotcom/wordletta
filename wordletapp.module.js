@@ -7,13 +7,14 @@ import confetti from "canvas-confetti";
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '1.4.3',
+    version: '1.4.5',
     user: null,
     wordLength: 6,
     totalGuesses: 6,
     correctLetters: 0,
     cursor: 1,
     hardMode: false,
+    isClearing: false,
     isWinner: false,
     isLoser: false,
     isReadyToCheck: false,
@@ -327,25 +328,54 @@ export default () => ({
             this.guessStatus[this.numGuesses] += (this.boxStatus[index]) ? this.boxStatus[index] : '0'
         })
 
-        // push latest guess
-        this.guesses.push(this.letters.join(''))
-
-        // CHECK: winner?
-        if (this.correctLetters == this.wordLength) {
-            this.$nextTick(() => this.gameWon())
-            this.playSound('win');
-        }
-        // CHECK: game over? (max # of guesses reached?)
-        else if (this.numGuesses == this.totalGuesses) {
-            this.$nextTick(() => this.gameLost())
-            this.playSound('loss');
-        }
+        // DELAYED SUBMISSION (Animation Logic)
+        // 1. User sees "Right/Wrong" colors on active row (already set above via boxStatus)
+        // 2. Wait 1s
+        // 3. Trigger "Clearing" (Fade Down)
+        // 4. Slide In new row (push to guesses) & Reset Active Row
 
         // game on. done evaluating current guess, reset cursor & ready check
         this.isReadyToCheck = false
-        if (this.cursor == this.wordLength) this.cursor = 0
+        // keep cursor at end to prevent typing during animation
+        // if (this.cursor == this.wordLength) this.cursor = 0
 
-        // gracefull clear active row
+        setTimeout(() => {
+            // Simultaneous Start:
+            // A. Start fading/dropping the active row
+            this.isClearing = true;
+
+            // B. Push latest guess to history (triggers slide-in of new row)
+            this.guesses.push(this.letters.join(''))
+
+            // CHECK: winner? (Delayed notification to match visual)
+            if (this.correctLetters == this.wordLength) {
+                // Wait for animation to finish before showing modal
+                setTimeout(() => {
+                    this.$nextTick(() => this.gameWon())
+                    this.playSound('win');
+                }, 600);
+            }
+            // CHECK: game over? (max # of guesses reached?)
+            else if (this.numGuesses == this.totalGuesses) {
+                setTimeout(() => {
+                    this.$nextTick(() => this.gameLost())
+                    this.playSound('loss');
+                }, 600);
+            }
+
+            setTimeout(() => {
+                // Reset Active Row (after animation completes)
+                this.boxStatus = [] // clear colors
+                for (let i = 0; i < this.wordLength; i++) {
+                    this.letters[i] = ''
+                    this.boxStatus[i] = ''
+                }
+                this.cursor = 0 // reset cursor
+                this.isClearing = false // remove fade class
+
+            }, 600); // Wait for fade animation (match CSS duration)
+
+        }, 1000); // 1s delay before moving
 
     },
     howManyInAnswer(l) {
