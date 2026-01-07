@@ -44,7 +44,7 @@
 
 <body class="bg-slate-50 font-['Lato']">
   <noscript>WordLetta requires JavaScript to run.</noscript>
-  <div id="app" x-data="wordletApp()" class="flex flex-col min-h-screen w-screen bg-slate-50 relative pb-60"
+  <div id="app" x-data="wordletApp()" class="flex flex-col min-h-screen w-full bg-slate-50 relative pb-60"
     @keyup.window="keyPressed()">
 
     <!-- HEADER REMOVED -->
@@ -60,7 +60,7 @@
     </div>
 
     <main class="flex flex-auto flex-col justify-center">
-      <div class="board p-3 lg:p-6 w-screen">
+      <div class="board p-3 lg:p-6 w-full max-w-full overflow-x-hidden">
 
         <!-- boxes -->
         <div class="flex justify-center items-center row guess py-1 md:py-2 gap-1 sm:gap-2 lg:gap-6 xl:gap-8 border-0">
@@ -83,6 +83,7 @@
         </div>
 
         <div class="flex flex-col items-center min-h-18 my-4 p-1 lg:p-3 gap-0 overflow-visible">
+          <!-- Live Guesses -->
           <template x-for="(guess, guessIndex) in guesses.slice().reverse()" :key="guess">
             <!-- wrapper for smooth slide-in -->
             <div class="w-full flex justify-center overflow-hidden animate-slide-down">
@@ -97,7 +98,16 @@
                             'bg-emerald-500 text-white': guessStatus[guesses.length - 1 - guessIndex] && guessStatus[guesses.length - 1 - guessIndex][guessLetterIndex] == '2'
                           }"></span>
                   </template>
-
+                </template>
+              </div>
+            </div>
+          </template>
+          <!-- Ghost Rows (Remaining Guesses) -->
+          <template x-for="i in (totalGuesses - guesses.length - (isWinner || isLoser ? 0 : 1))" :key="'ghost-'+i">
+            <div class="w-full flex justify-center opacity-30 py-1">
+              <div class="flex justify-center gap-2">
+                <template x-for="j in wordLength" :key="j">
+                  <div class="w-11 h-11 md:w-14 md:h-14 border-2 border-slate-300 rounded bg-slate-100"></div>
                 </template>
               </div>
             </div>
@@ -106,22 +116,21 @@
 
         <!-- keyboard -->
         <div :class="(isWinner || isLoser) ? 'opacity-40' : ''"
-          class="fixed bottom-20 left-0 right-0 z-20 flex flex-col items-center justify-center w-full border-0 gap-1.5 p-2 max-w-3xl mx-auto bg-slate-50/90 backdrop-blur-sm border-t border-slate-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+          class="fixed bottom-14 left-0 right-0 z-20 flex flex-col items-center justify-center w-full border-0 gap-2 py-4 px-3.5 max-w-3xl mx-auto bg-slate-50/90 backdrop-blur-sm border-t border-slate-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
 
           <template x-for="(row, rowIndex) in keyboardRows" :key="rowIndex">
-            <div class="flex justify-center gap-1.5 w-full"
-              :class="{'ml-[-20px]': rowIndex === keyboardRows.length - 1}">
+            <div class="flex justify-center gap-1 w-full">
 
               <!-- ENTER (Left of 3rd Row) -->
               <template x-if="rowIndex === keyboardRows.length - 1">
                 <div @click="enter" :class="!isReadyToCheck ? 'opacity-30' : 'animate-bounce'"
-                  class="noselect cursor-pointer overflow-none flex items-center justify-center px-1 w-12 md:w-16 h-10 md:h-12 text-xs md:text-sm font-bold text-white bg-indigo-500 hover:bg-indigo-600 rounded shadow-sm disabled:opacity-40 transition-all duration-200">
+                  class="noselect cursor-pointer overflow-none flex items-center justify-center px-1 w-auto flex-[1.5] max-w-[3.5rem] md:max-w-[4.5rem] h-10 md:h-12 text-xs md:text-sm font-bold text-white bg-indigo-500 hover:bg-indigo-600 rounded shadow-sm disabled:opacity-40 transition-all duration-200">
                   ENTER</div>
               </template>
 
               <template x-for="letter in row" :key="letter">
                 <div x-text="letter"
-                  class="noselect cursor-pointer overflow-none flex items-center justify-center w-8 md:w-10 h-10 md:h-12 text-lg md:text-2xl font-bold text-slate-700 bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 hover:from-white hover:to-slate-100 rounded shadow-sm transition-all duration-150 border border-slate-200"
+                  class="noselect cursor-pointer overflow-none flex-1 max-w-[2rem] md:max-w-[2.5rem] flex items-center justify-center h-10 md:h-12 text-lg md:text-2xl font-bold text-slate-700 bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 hover:from-white hover:to-slate-100 rounded shadow-sm transition-all duration-150 border border-slate-200"
                   :class="{
                         'opacity-25': alphabetStatus[alphabet.indexOf(letter)] === 0,
                         'from-amber-200 via-amber-300 to-amber-400 text-white border-amber-400': alphabetStatus[alphabet.indexOf(letter)] == 1,
@@ -129,10 +138,9 @@
                         }" @click="letterClicked(letter)"></div>
               </template>
 
-              <!-- BACKSPACE (Right of 3rd Row) -->
               <template x-if="rowIndex === keyboardRows.length - 1">
                 <div @click="backspace" :class="cursor == 0 ? 'opacity-30' : ''"
-                  class="noselect cursor-pointer overflow-none flex items-center justify-center w-12 md:w-16 h-10 md:h-12 text-lg md:text-2xl font-bold text-slate-700 bg-gradient-to-br from-slate-100 to-slate-300 hover:from-slate-50 hover:to-slate-200 rounded shadow-sm border border-slate-300">
+                  class="noselect cursor-pointer overflow-none flex items-center justify-center w-auto flex-[1.5] max-w-[3.5rem] md:max-w-[4.5rem] h-10 md:h-12 text-lg md:text-2xl font-bold text-slate-700 bg-gradient-to-br from-slate-100 to-slate-300 hover:from-slate-50 hover:to-slate-200 rounded shadow-sm border border-slate-300">
                   ⌫</div>
               </template>
 
@@ -151,10 +159,10 @@
             NEW GAME modal
           -->
         <div x-show="showNewGameModal" x-transition.opacity.duration.600ms style="display: none;"
-          class="fixed inset-0 z-30 flex items-center justify-center overflow-auto bg-slate-900 bg-opacity-40 backdrop-blur-sm">
+          class="fixed inset-0 z-30 flex items-center justify-center overflow-hidden bg-slate-900 bg-opacity-40 backdrop-blur-sm">
           <!-- modal inner -->
           <div x-show="showNewGameModal" x-transition.duration.600ms
-            class="w-4/5 md:w-1/2 lg:w-2/5 p-6 mx-auto bg-white rounded-xl shadow-2xl"
+            class="w-[90%] md:w-1/2 lg:w-2/5 p-4 md:p-6 mx-auto bg-white rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden"
             @click.away="showNewGameModal = false">
             <!-- Title / Close-->
             <div class="flex items-start justify-between">
@@ -164,7 +172,7 @@
             </div>
 
             <!-- Login / Profile -->
-            <div class="mb-6 flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100">
+            <div class="mb-3 flex justify-between items-center bg-slate-50 p-2 rounded-lg border border-slate-100">
               <template x-if="!user">
                 <button @click="login"
                   class="flex items-center gap-2 text-sm font-bold text-indigo-600 hover:text-indigo-800">
@@ -189,7 +197,7 @@
             </div>
 
             <!-- content -->
-            <div class="grid grid-cols-1 place-items-center gap-6 divide-y-2 divide-slate-100 text-slate-800">
+            <div class="grid grid-cols-1 place-items-center gap-4 divide-y-2 divide-slate-100 text-slate-800">
 
               <!-- daily challenge -->
               <div class="w-full flex flex-col items-center">
@@ -197,7 +205,7 @@
                     x-text="new Date().toLocaleDateString('en-US', {month:'numeric', day:'numeric'})"></span></h3>
                 <template x-if="!dailyChallengeComplete">
                   <button @click="dailyChallenge = true; newGame()"
-                    class="h-14 flex items-center justify-center gap-1.5 w-full hover:bg-indigo-600 hover:shadow-lg transition-all transform hover:-translate-y-0.5 py-3 px-6 text-center text-lg font-bold text-white bg-indigo-500 rounded-lg shadow-md">
+                    class="h-12 flex items-center justify-center gap-1.5 w-full hover:bg-indigo-600 hover:shadow-lg transition-all transform hover:-translate-y-0.5 py-2 px-6 text-center text-lg font-bold text-white bg-indigo-500 rounded-lg shadow-md">
                     <!-- Calendar Icon -->
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
                       <path
@@ -212,14 +220,14 @@
               </div>
 
               <!-- # of letters -->
-              <div class="mt-4 pt-4 w-full text-center">
-                <h3 class="text-2xl font-bold mt-2 mb-1 text-indigo-500">Endless Challenge</h3>
-                <div class="text-sm text-slate-400 mb-4">Play as much as you like!</div>
-                <div class="flex flex-col items-center gap-2 mb-4">
+              <div class="mt-3 pt-3 w-full text-center">
+                <h3 class="text-2xl font-bold mt-1 mb-1 text-indigo-500">Endless Challenge</h3>
+                <div class="text-sm text-slate-400 mb-3">Play as much as you like!</div>
+                <div class="flex flex-col items-center gap-2 mb-3">
                   <div class="flex justify-center gap-1 flex-wrap">
                     <template x-for="i in 5">
                       <button
-                        class="w-8 h-8 rounded-md flex items-center justify-center text-sm font-bold transition-all duration-200"
+                        class="w-10 h-8 md:w-8 md:h-8 rounded-md flex items-center justify-center text-sm font-bold transition-all duration-200"
                         :class="{
                               'bg-rose-500 text-white shadow-md transform scale-110 z-10' : wordLength == i && hardMode,
                               'bg-indigo-600 text-white shadow-md transform scale-110 z-10' : wordLength == i && !hardMode,
@@ -230,7 +238,7 @@
                   <div class="flex justify-center gap-1 flex-wrap">
                     <template x-for="i in 5">
                       <button
-                        class="w-8 h-8 rounded-md flex items-center justify-center text-sm font-bold transition-all duration-200"
+                        class="w-10 h-8 md:w-8 md:h-8 rounded-md flex items-center justify-center text-sm font-bold transition-all duration-200"
                         :class="{
                               'bg-rose-500 text-white shadow-md transform scale-110 z-10' : wordLength == (i+5) && hardMode,
                               'bg-indigo-600 text-white shadow-md transform scale-110 z-10' : wordLength == (i+5) && !hardMode,
@@ -245,7 +253,7 @@
                 <div class="text-xs font-bold text-slate-400 tracking-wider">LETTERS</div>
 
                 <!-- Hard Mode Switch - force on high-letter, uncurated lists -->
-                <div class="mt-6 flex justify-center items-center gap-3">
+                <div class="mt-4 flex justify-center items-center gap-3">
 
                   <!-- Toggle Wrapper (Clickable) -->
                   <div class="flex flex-row items-center p-2 rounded-lg transition-colors"
@@ -292,9 +300,9 @@
 
                 </div>
 
-                <div class="grid place-items-center mt-6">
+                <div class="grid place-items-center mt-4">
                   <button @click="newGame"
-                    class="h-14 flex items-center justify-center w-full hover:bg-indigo-600 hover:shadow-lg transition-all transform hover:-translate-y-0.5 py-3 px-6 text-center text-lg font-bold text-white bg-indigo-500 rounded-lg shadow-md">
+                    class="h-12 flex items-center justify-center w-full hover:bg-indigo-600 hover:shadow-lg transition-all transform hover:-translate-y-0.5 py-2 px-6 text-center text-lg font-bold text-white bg-indigo-500 rounded-lg shadow-md">
                     <span class="text-3xl mr-3 font-bold leading-none mb-1">∞</span> Play Endless Challenge
                   </button>
                 </div>
@@ -363,81 +371,88 @@
             STATS modal
           -->
         <div x-show="showStatsModal" x-transition.opacity.duration.600ms style="display: none;"
-          class="fixed inset-0 z-30 flex items-center justify-center overflow-auto bg-slate-900 bg-opacity-40 backdrop-blur-sm">
+          class="fixed inset-0 z-30 flex items-center justify-center overflow-hidden bg-slate-900 bg-opacity-40 backdrop-blur-sm">
           <!-- modal inner -->
           <div x-show="showStatsModal" x-transition.opacity.duration.600ms
-            class="w-3/5 sm:w-2/5 md:w-1/3 lg:w-1/4 max-w-4/5 p-6 mx-auto text-left bg-white rounded-xl shadow-2xl"
+            class="w-[90%] sm:w-3/4 md:w-1/2 lg:w-1/3 p-4 mx-auto text-left bg-white rounded-xl shadow-2xl max-h-[85vh] overflow-y-auto overflow-x-hidden"
             @click.away="showStatsModal = false">
             <!-- Title / Close-->
-            <div class="flex items-start justify-between mb-4 border-b border-slate-100 pb-2">
-              <h5 class="mr-3 text-slate-800 max-w-none text-xl font-bold">Your Stats</h5>
-              <button type="button" class="text-2xl font-bold text-slate-400 hover:text-slate-600 cursor-pointer"
+            <div class="flex items-start justify-between mb-2 border-b border-slate-100 pb-2">
+              <h5 class="mr-3 text-slate-800 max-w-none text-lg font-bold">Your Stats</h5>
+              <button type="button" class="text-xl font-bold text-slate-400 hover:text-slate-600 cursor-pointer"
                 @click="showStatsModal = false">&times;</button>
             </div>
 
             <!-- content -->
             <div class="text-slate-700">
-              <div class="flex justify-between items-center mb-2">
-                <span class="text-sm font-medium text-slate-500">Games Played</span>
-                <span class="text-xl font-bold text-slate-900" x-text="userGames"></span>
-              </div>
-
-              <div class="grid grid-cols-2 gap-3 my-4">
-                <div class="bg-emerald-50 p-2 rounded text-center">
-                  <div class="text-2xl font-bold text-emerald-600" x-text="userWins"></div>
-                  <div class="text-xs font-bold text-emerald-800 uppercase">Wins</div>
+              <div class="grid grid-cols-4 gap-2 mb-4 text-center">
+                <div class="flex flex-col bg-slate-50 p-1 rounded">
+                  <span class="text-xl font-bold text-slate-900" x-text="userGames"></span>
+                  <span class="text-[10px] uppercase text-slate-500">Played</span>
                 </div>
-                <div class="bg-rose-50 p-2 rounded text-center">
-                  <div class="text-2xl font-bold text-rose-600" x-text="userLosses"></div>
-                  <div class="text-xs font-bold text-rose-800 uppercase">Losses</div>
+                <div class="flex flex-col bg-emerald-50 p-1 rounded">
+                  <span class="text-xl font-bold text-emerald-600" x-text="userWins"></span>
+                  <span class="text-[10px] uppercase text-emerald-800">Wins</span>
                 </div>
-              </div>
-
-              <div class="text-center mb-6">
-                <div class="text-sm text-slate-500">Win Percentage</div>
-                <div class="text-3xl font-black text-indigo-600">
-                  <template x-if="userWins || userLosses">
-                    <span><span x-text="userWinPct"></span>%</span>
-                  </template>
-                  <template x-if="!userWins && !userLosses">
-                    <span>0%</span>
-                  </template>
+                <div class="flex flex-col bg-rose-50 p-1 rounded">
+                  <span class="text-xl font-bold text-rose-600" x-text="userLosses"></span>
+                  <span class="text-[10px] uppercase text-rose-800">Losses</span>
+                </div>
+                <div class="flex flex-col bg-indigo-50 p-1 rounded">
+                  <span class="text-xl font-bold text-indigo-600">
+                    <template x-if="userWins || userLosses">
+                      <span><span x-text="userWinPct"></span>%</span>
+                    </template>
+                    <template x-if="!userWins && !userLosses">0%</template>
+                  </span>
+                  <span class="text-[10px] uppercase text-indigo-800">Win Rate</span>
                 </div>
               </div>
 
-              <!-- Guess Distribution -->
-              <div class="mb-6">
-                <h6 class="text-sm font-bold text-slate-700 mb-2 uppercase">Guess Distribution</h6>
-                <div class="flex flex-col gap-1 text-xs font-bold text-white">
-                  <template x-for="(count, index) in guessDistribution" :key="index">
-                    <div class="flex items-center gap-2">
-                      <span class="text-slate-400 w-2" x-text="index + 1"></span>
-                      <div class="bg-indigo-500 rounded p-1 min-w-[1.5rem] text-right"
-                        :style="`width: ${Math.max(5, (count / userWins) * 100)}%`"
-                        :class="{'bg-slate-300': count == 0}" x-text="count">
-                      </div>
-                    </div>
-                  </template>
+              <!-- Guess Distribution (Pie Chart) -->
+              <div class="mb-4 flex gap-4 items-center justify-center">
+                <!-- Chart -->
+                <div class="relative w-32 h-32 rounded-full shadow-inner border-4 border-slate-50"
+                  :style="guessPieChartStyle">
+                  <div class="absolute inset-8 bg-white rounded-full flex items-center justify-center shadow-sm">
+                    <span class="text-xs font-bold text-slate-400">DIST</span>
+                  </div>
+                </div>
+                <!-- Legend -->
+                <div class="flex flex-col gap-1 text-[10px] font-bold">
+                  <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-[#10b981]"></span> 1 Guess
+                  </div>
+                  <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-[#34d399]"></span> 2 Guesses
+                  </div>
+                  <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-[#6ee7b7]"></span> 3 Guesses
+                  </div>
+                  <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-[#fcd34d]"></span> 4 Guesses
+                  </div>
+                  <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-[#fbbf24]"></span> 5 Guesses
+                  </div>
+                  <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-[#f43f5e]"></span> 6 Guesses
+                  </div>
                 </div>
               </div>
 
               <!-- Match History -->
-              <div class="max-h-48 overflow-y-auto border-t border-slate-100 pt-4">
-                <h6 class="text-sm font-bold text-slate-700 mb-2 uppercase">Match History</h6>
-                <ul class="text-sm">
+              <div class="border-t border-slate-100 pt-2">
+                <h6 class="text-xs font-bold text-slate-500 mb-1 uppercase">Recent Matches</h6>
+                <ul class="text-xs space-y-1">
                   <template x-for="game in recentHistory" :key="game.timestamp">
-                    <li class="flex justify-between py-1 border-b border-slate-50 last:border-0">
-                      <span class="font-mono font-bold" :class="game.isWinner ? 'text-emerald-500' : 'text-rose-500'"
+                    <li class="flex justify-between items-center text-slate-600 bg-slate-50 px-2 py-0.5 rounded">
+                      <span class="font-mono font-bold" :class="game.isWinner ? 'text-emerald-600' : 'text-rose-500'"
                         x-text="game.answer"></span>
-                      <span class="text-slate-400 text-xs" x-text="game.numGuesses + '/6'"></span>
+                      <span class="text-[10px] bg-white border border-slate-200 px-1 rounded"
+                        x-text="game.numGuesses + '/6'"></span>
                     </li>
                   </template>
                 </ul>
               </div>
 
-              <div class="mt-6 border-t border-slate-100 pt-4 flex justify-between items-center">
+              <div class="mt-4 border-t border-slate-100 pt-2 flex justify-end">
                 <button @click="confirm('This will reset all personal stats.\n\nAre you sure?') ? resetStats : ''"
-                  class="text-xs text-rose-500 hover:text-rose-700 hover:underline">Reset Stats</button>
+                  class="text-[10px] text-rose-400 hover:text-rose-600 hover:underline">Reset Stats</button>
               </div>
             </div>
           </div>
@@ -578,9 +593,10 @@
       <div class="flex gap-6 items-center pr-2">
         <div class="cursor-pointer hover:text-white hover:scale-110 transition-all text-xl"
           @click="showSettingsModal = true" title="Settings">⚙️</div>
-        <div x-show="endlessStats.length"><span
-            class="cursor-pointer hover:text-white hover:scale-110 transition-all text-xl"
-            @click="showStatsModal = true" title="Stats">📊</span></div>
+        <div>
+          <span class="cursor-pointer hover:text-white hover:scale-110 transition-all text-xl"
+            @click="showStatsModal = true" title="Stats">📊</span>
+        </div>
         <template x-if="user">
           <img :src="user.photoURL" class="w-8 h-8 rounded-full border border-slate-500 shadow-sm"
             :title="user.displayName">

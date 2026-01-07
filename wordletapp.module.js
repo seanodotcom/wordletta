@@ -108,6 +108,33 @@ export default () => ({
         })
         return dist
     },
+    get guessPieChartStyle() {
+        const dist = this.guessDistribution;
+        const total = dist.reduce((a, b) => a + b, 0);
+        if (total === 0) return 'background: conic-gradient(#cbd5e1 0% 100%)'; // slate-300
+
+        const colors = [
+            '#10b981', // 1 - emerald-500
+            '#34d399', // 2 - emerald-400
+            '#6ee7b7', // 3 - emerald-300
+            '#fcd34d', // 4 - amber-300
+            '#fbbf24', // 5 - amber-400
+            '#f43f5e'  // 6 - rose-500
+        ];
+
+        let gradient = 'background: conic-gradient(';
+        let currentPer = 0;
+
+        dist.forEach((count, i) => {
+            if (count > 0) {
+                const per = (count / total) * 100;
+                gradient += `${colors[i]} ${currentPer}% ${currentPer + per}%, `;
+                currentPer += per;
+            }
+        });
+
+        return gradient.replace(/, $/, ')');
+    },
     get recentHistory() {
         return this.endlessStats ? this.endlessStats.slice().reverse().slice(0, 50) : []
     },
