@@ -19,15 +19,11 @@
 
     @keyframes slideDown {
       0% {
-        opacity: 0;
-        transform: translateY(-20px);
         max-height: 0;
         margin-bottom: 0;
       }
 
       100% {
-        opacity: 1;
-        transform: translateY(0);
         max-height: 100px;
         /* Large enough to fit content */
         margin-bottom: 0.5rem;
@@ -36,7 +32,23 @@
     }
 
     .animate-slide-down {
-      animation: slideDown 0.6s ease-out forwards;
+      animation: slideDown 0.8s ease-out forwards;
+    }
+
+    @keyframes dropIn {
+      0% {
+        transform: translateY(-100px) scale(1.5);
+        opacity: 1;
+      }
+
+      100% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+      }
+    }
+
+    .animate-drop-in {
+      animation: dropIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
     }
 
     @keyframes pulseCursor {
@@ -109,8 +121,8 @@
           <!-- Live Guesses -->
           <template x-for="(guess, guessIndex) in guesses.slice().reverse()" :key="guess">
             <!-- wrapper for smooth slide-in -->
-            <div class="w-full flex justify-center overflow-hidden animate-slide-down">
-              <div class="flex justify-center gap-2 z-10 drop-shadow-md py-1">
+            <div class="w-full flex justify-center overflow-visible animate-slide-down relative z-0">
+              <div class="flex justify-center gap-2 z-10 drop-shadow-md py-1 animate-drop-in origin-top">
                 <template x-for="(guessLet, guessLetterIndex) in guess" :key="guessLet + guessLetterIndex">
                   <template x-if="guessStatus[guesses.length - 1 - guessIndex]">
                     <span x-text="guessLet"
@@ -557,7 +569,7 @@
             <!-- Title / Close-->
             <div class="flex items-start justify-between mb-6 border-b border-slate-100 pb-2">
               <h5 class="mr-3 text-slate-800 max-w-none text-xl font-bold">Release Notes <span
-                  class="text-sm font-normal text-slate-400">v1.4.3</span></h5>
+                  class="text-sm font-normal text-slate-400">v1.5.0</span></h5>
               <button type="button" class="text-2xl font-bold text-slate-400 hover:text-slate-600 cursor-pointer"
                 @click="showReleaseNotesModal = false">&times;</button>
             </div>
@@ -565,17 +577,22 @@
             <!-- content -->
             <div class="text-slate-700 text-sm overflow-y-auto max-h-[60vh] pr-2">
               <div class="mb-6">
-                <h4 class="font-bold text-indigo-600 mb-2 text-base">🎉 Celebration & Sharing</h4>
+                <h4 class="font-bold text-indigo-600 mb-2 text-base">✨ Sweet Animations</h4>
                 <ul class="list-disc list-outside ml-4 space-y-1 text-slate-500">
-                  <li><strong>Confetti:</strong> A burst of joy when you win!</li>
-                  <li><strong>Enhanced Sharing:</strong> Share scores now show the exact pattern of your game.</li>
-                  <li><strong>Smart Dates:</strong> Daily Challenge now shows the date (e.g., "Jan 6").</li>
-                  <li><strong>Fun Phrases:</strong> Random accolades added to your share text.</li>
+                  <li><strong>Morphing Tiles:</strong> Guesses now smoothy "drop" into place.</li>
+                  <li><strong>Layout Polish:</strong> Everything feels a little more fluid.</li>
                 </ul>
               </div>
 
               <div class="mb-6">
                 <h4 class="font-bold text-slate-400 mb-2 text-base">PREVIOUS UPDATES</h4>
+                <div class="opacity-75 mb-3">
+                  <h5 class="font-bold text-indigo-600 mb-1">v1.4.3</h5>
+                  <ul class="list-disc list-outside ml-4 space-y-1 text-slate-500 text-xs">
+                    <li>Celebration Confetti & Smart Dates</li>
+                    <li>Enhanced Sharing (Grid + Fun Phrases)</li>
+                  </ul>
+                </div>
                 <div class="opacity-75">
                   <h5 class="font-bold text-indigo-600 mb-1">v1.3.0</h5>
                   <ul class="list-disc list-outside ml-4 space-y-1 text-slate-500 text-xs">

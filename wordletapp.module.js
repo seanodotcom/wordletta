@@ -7,7 +7,7 @@ import confetti from "canvas-confetti";
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '1.4.7',
+    version: '1.5.0',
     user: null,
     wordLength: 6,
     totalGuesses: 6,
@@ -342,7 +342,7 @@ export default () => ({
         setTimeout(() => {
             // Simultaneous Start:
             // A. Start fading/dropping the active row
-            this.isClearing = true;
+            this.isClearing = true; // This triggers opacity-0 on the input box
 
             // B. Push latest guess to history (triggers slide-in of new row)
             this.guesses.push(this.letters.join(''))
@@ -353,14 +353,14 @@ export default () => ({
                 setTimeout(() => {
                     this.$nextTick(() => this.gameWon())
                     this.playSound('win');
-                }, 600);
+                }, 1200);
             }
             // CHECK: game over? (max # of guesses reached?)
             else if (this.numGuesses == this.totalGuesses) {
                 setTimeout(() => {
                     this.$nextTick(() => this.gameLost())
                     this.playSound('loss');
-                }, 600);
+                }, 1200);
             }
 
             setTimeout(() => {
@@ -373,7 +373,7 @@ export default () => ({
                 this.cursor = 0 // reset cursor
                 this.isClearing = false // remove fade class
 
-            }, 600); // Wait for fade animation (match CSS duration)
+            }, 900); // Wait for fade animation (match CSS duration)
 
         }, 1000); // 1s delay before moving
 
