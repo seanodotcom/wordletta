@@ -4,10 +4,29 @@ import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from
 import { doc, getDoc, setDoc, updateDoc, arrayUnion } from "firebase/firestore";
 import confetti from "canvas-confetti";
 
+// Layer Definitions (Module Scope)
+const LAYER_DEFS = {
+    'QWERTY': [
+        ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+        ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+        ['Z', 'X', 'C', 'V', 'B', 'N', 'M']
+    ],
+    'DVORAK': [
+        ['P', 'Y', 'F', 'G', 'C', 'R', 'L'],
+        ['A', 'O', 'E', 'U', 'I', 'D', 'H', 'T', 'N', 'S'],
+        ['Q', 'J', 'K', 'X', 'B', 'M', 'W', 'V', 'Z']
+    ],
+    'ALPHA': [
+        ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'],
+        ['J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R'],
+        ['S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+    ]
+};
+
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '1.7.0',
+    version: '1.7.1',
     user: null,
     wordLength: 6,
     totalGuesses: 6,
@@ -29,11 +48,6 @@ export default () => ({
     toastMessage: '',
     showToast: false,
     settings: {
-        sound: true,
-        haptics: true,
-        sound: true,
-        haptics: true,
-        theme: 'light', // 'light', 'dark', 'contrast'
         sound: true,
         haptics: true,
         theme: 'light', // 'light', 'dark', 'contrast'
@@ -91,25 +105,8 @@ export default () => ({
         });
     },
 
-    LAYER_DEFS: {
-        'QWERTY': [
-            ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
-            ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
-            ['Z', 'X', 'C', 'V', 'B', 'N', 'M']
-        ],
-        'DVORAK': [
-            ['P', 'Y', 'F', 'G', 'C', 'R', 'L'],
-            ['A', 'O', 'E', 'U', 'I', 'D', 'H', 'T', 'N', 'S'],
-            ['Q', 'J', 'K', 'X', 'B', 'M', 'W', 'V', 'Z']
-        ],
-        'ALPHA': [
-            ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'],
-            ['J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R'],
-            ['S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
-        ]
-    },
     alphabet: [],
-    keyboardRows: [],
+    keyboardRows: LAYER_DEFS['QWERTY'], // SAFETY: Initialize with QWERTY by default
     alphabetStatus: [],
     guessStatus: [],
     boxStatus: [],
@@ -865,6 +862,10 @@ export default () => ({
                 console.error('Error loading settings', e);
             }
         }
+        // Ensure keyboard layout is valid
+        if (!this.settings.keyboardLayout || !LAYER_DEFS[this.settings.keyboardLayout]) {
+            this.settings.keyboardLayout = 'QWERTY';
+        }
         this.setKeyboardLayout(this.settings.keyboardLayout, false);
     },
     saveData() {
@@ -885,7 +886,7 @@ export default () => ({
         this.saveData();
     },
     setKeyboardLayout(layoutName, save = true) {
-        if (!this.LAYER_DEFS[layoutName]) return;
+        if (!LAYER_DEFS[layoutName]) return;
 
         const oldAlphabet = [...this.alphabet];
         const oldStatus = [...this.alphabetStatus];
@@ -898,7 +899,7 @@ export default () => ({
 
         // Set New Layout
         this.settings.keyboardLayout = layoutName;
-        this.keyboardRows = this.LAYER_DEFS[layoutName];
+        this.keyboardRows = LAYER_DEFS[layoutName];
         this.alphabet = this.keyboardRows.flat();
 
         // Rebuild Status Array in new order
