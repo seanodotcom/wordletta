@@ -26,7 +26,7 @@ const LAYER_DEFS = {
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '1.7.2',
+    version: '1.7.3',
     user: null,
     wordLength: 6,
     totalGuesses: 6,
@@ -70,8 +70,8 @@ export default () => ({
         }
     },
 
-    init() {
-        this.loadData();
+    // init() removed (merged into main init below)
+    setupWatchers() {
         this.$watch('showSettingsModal', (value) => {
             if (value) {
                 // Modal Opening: Pause if running
@@ -264,6 +264,7 @@ export default () => ({
         response = null
     },
     async init() {
+        this.setupWatchers(); // Initialize watchers
         this.startTime = new Date();
         // auth check
         if (auth) {
