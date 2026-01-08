@@ -911,6 +911,11 @@ export default () => ({
             return (val !== undefined) ? val : '';
         });
 
+        console.log('Layout:', layoutName); // DEBUG
+        console.log('Alphabet:', JSON.stringify(this.alphabet)); // DEBUG
+        console.log('Status Map:', JSON.stringify(statusMap)); // DEBUG
+        console.log('New Status:', JSON.stringify(this.alphabetStatus)); // DEBUG
+
         if (save) this.saveData();
     },
 
