@@ -26,7 +26,7 @@ const LAYER_DEFS = {
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '1.7.3',
+    version: '1.7.4',
     user: null,
     wordLength: 6,
     totalGuesses: 6,
@@ -105,7 +105,11 @@ export default () => ({
         });
     },
 
-    alphabet: [],
+    LAYER_DEFS: { // Kept for reference or if used elsewhere, but we found it's in module scope now.
+        // Actually, I removed LAYER_DEFS from here in v1.7.1, so this block might be gone or I shouldn't touch it if it's not there.
+        // Let's target the properties directly.
+    },
+    alphabet: LAYER_DEFS['QWERTY'].flat(), // SAFETY: Initialize with QWERTY flat array
     keyboardRows: LAYER_DEFS['QWERTY'], // SAFETY: Initialize with QWERTY by default
     alphabetStatus: [],
     guessStatus: [],
