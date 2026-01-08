@@ -26,7 +26,7 @@ const LAYER_DEFS = {
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '1.7.1',
+    version: '1.7.2',
     user: null,
     wordLength: 6,
     totalGuesses: 6,
@@ -903,7 +903,12 @@ export default () => ({
         this.alphabet = this.keyboardRows.flat();
 
         // Rebuild Status Array in new order
-        this.alphabetStatus = this.alphabet.map(letter => statusMap[letter] || '');
+        // Rebuild Status Array in new order
+        this.alphabetStatus = this.alphabet.map(letter => {
+            // Fix 0 being treated as falsey
+            const val = statusMap[letter];
+            return (val !== undefined) ? val : '';
+        });
 
         if (save) this.saveData();
     },
