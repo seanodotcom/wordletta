@@ -26,7 +26,7 @@ const LAYER_DEFS = {
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '1.8.0',
+    version: '1.8.1',
     user: null,
     wordLength: 6,
     totalGuesses: 6,
@@ -42,6 +42,7 @@ export default () => ({
     showStatsModal: false,
     showSettingsModal: false,
     showReleaseNotesModal: false,
+    showHelpModal: false,
     showVolumePopover: false,
     dailyChallenge: false,
     dailyChallengeComplete: false,
@@ -96,6 +97,23 @@ export default () => ({
                         this.pausedByModal = false;
                     }
                 }
+            }
+        });
+        this.$watch('showHelpModal', (value) => {
+            if (value) {
+                if (this.timerStarted && !this.isPaused && !this.isWinner && !this.isLoser) {
+                    this.togglePause();
+                    this.pausedByModal = true;
+                }
+                this.updateMusicState();
+            } else {
+                if (this.timerStarted && this.isPaused && !this.isWinner && !this.isLoser) {
+                    if (this.pausedByModal) {
+                        this.togglePause();
+                        this.pausedByModal = false;
+                    }
+                }
+                this.updateMusicState();
             }
         });
 
@@ -1109,8 +1127,6 @@ export default () => ({
 
         osc.start(now);
         osc.stop(now + duration);
-        osc.start(now);
-        osc.stop(now + duration);
     },
 
     // DEBUG TOOLS
@@ -1216,7 +1232,8 @@ export default () => ({
             && !this.isPaused
             && !this.isWinner
             && !this.isLoser
-            && !this.showNewGameModal;
+            && !this.showNewGameModal
+            && !this.showHelpModal;
 
         if (shouldPlay) {
             // Only play if not already playing to avoid errors/restarts
