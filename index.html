@@ -109,7 +109,43 @@
             </span>
           </div>
 
+
+
+          <!-- Music Toggle & Popover -->
+          <div class="relative" @click.outside="showVolumePopover = false">
+            <button @click="showVolumePopover = !showVolumePopover"
+              class="text-slate-400 dark:text-slate-500 hover:text-indigo-500 transition-colors p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full"
+              title="Music Settings">
+              <img x-show="settings.music" src="/icons/speaker-on.svg"
+                class="w-6 h-6 opacity-60 hover:opacity-100 transition-opacity dark:invert contrast:invert">
+              <img x-show="!settings.music" src="/icons/speaker-off.svg"
+                class="w-6 h-6 opacity-60 hover:opacity-100 transition-opacity dark:invert contrast:invert">
+            </button>
+
+            <!-- Popover -->
+            <div x-show="showVolumePopover" x-transition.origin.top.right.duration.200ms
+              class="absolute top-full right-0 mt-2 p-4 w-64 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 z-50 flex flex-col gap-4">
+
+              <!-- Slider Row -->
+              <div class="flex items-center gap-3">
+                <!-- Mute/Unmute Button -->
+                <button @click="toggleMusic()" class="text-slate-400 hover:text-indigo-500 transition-colors"
+                  :title="settings.music ? 'Mute' : 'Unmute'">
+                  <img x-show="settings.music" src="/icons/speaker-off.svg"
+                    class="w-4 h-4 opacity-60 hover:opacity-100 transition-opacity dark:invert contrast:invert">
+                  <img x-show="!settings.music" src="/icons/speaker-on.svg"
+                    class="w-4 h-4 opacity-60 hover:opacity-100 transition-opacity dark:invert contrast:invert">
+                </button>
+                <input type="range" min="0" max="1" step="0.1" :value="settings.musicVolume"
+                  @input="setMusicVolume($event.target.value)" @change="persistVolume()"
+                  class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500 hover:accent-indigo-600">
+              </div>
+            </div>
+          </div>
+
           <!-- Settings Gear -->
+
+
           <button @click="showSettingsModal = true"
             class="text-slate-400 dark:text-slate-500 hover:text-indigo-500 transition-colors p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full"
             title="Settings">
@@ -607,12 +643,31 @@
                 </button>
               </div>
 
+              <!-- Music -->
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="text-lg font-bold text-slate-700">Music</div>
+                  <div class="text-xs text-slate-400">Background music</div>
+                </div>
+                <button
+                  class="relative inline-flex items-center h-6 rounded-full w-11 transition-colors duration-200 focus:outline-none"
+                  :class="settings.music ? 'bg-indigo-500' : 'bg-slate-300'" @click="toggleMusic">
+                  <span
+                    class="inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-200 ml-1"
+                    :class="settings.music ? 'translate-x-5' : 'translate-x-0'"></span>
+                </button>
+              </div>
+
               <!-- Haptics -->
+
+              <!-- Haptics -->
+
               <div class="flex items-center justify-between" :class="{'opacity-50': !isMobile}">
                 <div>
                   <div class="text-lg font-bold text-slate-700">Haptics</div>
                   <div class="text-xs text-slate-400"
-                    x-text="isMobile ? 'Vibration feedback' : 'Not available on desktop'"></div>
+                    x-text="isMobile ? 'Vibration feedback' : 'Not available on desktop'">
+                  </div>
                 </div>
                 <!-- Toggle Switch -->
                 <button
@@ -705,7 +760,7 @@
             <!-- Title / Close-->
             <div class="flex items-start justify-between mb-6 border-b border-slate-100 pb-2">
               <h5 class="mr-3 text-slate-800 max-w-none text-xl font-bold">Release Notes <span
-                  class="text-sm font-normal text-slate-400">v1.6.5</span></h5>
+                  class="text-sm font-normal text-slate-400">v1.8.0</span></h5>
               <button type="button" class="text-2xl font-bold text-slate-400 hover:text-slate-600 cursor-pointer"
                 @click="showReleaseNotesModal = false">&times;</button>
             </div>
@@ -713,17 +768,24 @@
             <!-- content -->
             <div class="text-slate-700 text-sm overflow-y-auto max-h-[60vh] pr-2">
               <div class="mb-6">
-                <h4 class="font-bold text-rose-500 mb-2 text-base">🔥 Streaks & Haptics</h4>
+                <h4 class="font-bold text-indigo-500 mb-2 text-base">🎵 Background Music & Volume</h4>
                 <ul class="list-disc list-outside ml-4 space-y-1 text-slate-500">
-                  <li><strong>Streaks:</strong> Track your daily wins! Watch for the Fire Glow (Warm, Warmer, HOT) as
-                    your streak grows.</li>
-                  <li><strong>Haptics:</strong> Feel the clicks and clacks (Mobile). Toggle in Settings.</li>
-                  <li><strong>No more Ludicrous:</strong> Hard mode disabled for 1-letter games.</li>
+                  <li><strong>Tunes:</strong> Added soothing background music (Salsangrahop). Toggle in Settings.</li>
+                  <li><strong>Volume Control:</strong> Click the speaker icon in the header for quick access.</li>
+                  <li><strong>Smart Mute:</strong> Mute saves your volume level. Unmute restores it perfectly.</li>
                 </ul>
               </div>
 
               <div class="mb-6">
                 <h4 class="font-bold text-slate-400 mb-2 text-base">PREVIOUS UPDATES</h4>
+                <div class="opacity-75 mb-3">
+                  <h5 class="font-bold text-rose-500 mb-1">v1.7.0</h5>
+                  <ul class="list-disc list-outside ml-4 space-y-1 text-slate-500 text-xs">
+                    <li>Streaks & Fire Mode</li>
+                    <li>Haptics (Mobile)</li>
+                    <li>Themes (Dark/Contrast)</li>
+                  </ul>
+                </div>
                 <div class="opacity-75 mb-3">
                   <h5 class="font-bold text-indigo-600 mb-1">v1.5.0</h5>
                   <ul class="list-disc list-outside ml-4 space-y-1 text-slate-500 text-xs">

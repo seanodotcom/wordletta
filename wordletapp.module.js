@@ -26,7 +26,7 @@ const LAYER_DEFS = {
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '1.7.4',
+    version: '1.8.0',
     user: null,
     wordLength: 6,
     totalGuesses: 6,
@@ -42,6 +42,7 @@ export default () => ({
     showStatsModal: false,
     showSettingsModal: false,
     showReleaseNotesModal: false,
+    showVolumePopover: false,
     dailyChallenge: false,
     dailyChallengeComplete: false,
     answer: null,
@@ -49,7 +50,11 @@ export default () => ({
     showToast: false,
     settings: {
         sound: true,
+        music: true,
+        musicVolume: 0.3,
+        lastVolume: 0.3, // Remembers volume for unmute
         haptics: true,
+
         theme: 'light', // 'light', 'dark', 'contrast'
         keyboardLayout: 'QWERTY'
     },
@@ -60,6 +65,10 @@ export default () => ({
     timerStarted: false,
     pausedByModal: false,
     idleTimeout: null,
+
+    // Music State
+    bgMusic: null,
+
 
     resetIdleTimer() {
         if (this.idleTimeout) clearTimeout(this.idleTimeout);
@@ -103,6 +112,13 @@ export default () => ({
                 }
             }
         });
+
+        // Watch for New Game modal to handle music start
+        this.$watch('showNewGameModal', (value) => {
+            // giving a slight delay to allow interaction to register if it's the first close
+            setTimeout(() => { this.updateMusicState(); }, 100);
+        });
+
     },
 
     LAYER_DEFS: { // Kept for reference or if used elsewhere, but we found it's in module scope now.
@@ -346,6 +362,8 @@ export default () => ({
         this.stopTimer();
         this.timerStarted = false;
         this.gameTime = 0;
+        this.updateMusicState();
+
     },
     keyPressed() {
         // handle keyboard events
@@ -558,7 +576,9 @@ export default () => ({
         this.isWinner = true
         this.logStats()
         this.confettiWin() // Fire confetti!
+        this.updateMusicState(); // Stop music
         this.showShareModal = true
+
     },
     confettiWin() {
         const duration = 3 * 1000;
@@ -589,7 +609,9 @@ export default () => ({
         this.stopTimer();
         this.isLoser = true
         this.logStats()
+        this.updateMusicState(); // Stop music
         this.showShareModal = true
+
     },
     async shareGame(asImage = false) {
         // build full shareBlurb
@@ -837,7 +859,9 @@ export default () => ({
         } else {
             this.resetIdleTimer();
         }
+        this.updateMusicState(); // Pause/Resume music
     },
+
     get formattedTime() {
         return this.gameTime.toFixed(1) + 's';
     },
@@ -885,6 +909,12 @@ export default () => ({
         this.settings.sound = !this.settings.sound;
         this.saveData();
     },
+    toggleMusic() {
+        this.settings.music = !this.settings.music;
+        this.saveData();
+        this.updateMusicState();
+    },
+
     toggleHaptics() {
         this.settings.haptics = !this.settings.haptics;
         if (this.settings.haptics) this.triggerHaptic('enter'); // feedback
@@ -1121,7 +1151,86 @@ export default () => ({
         setTimeout(() => {
             this.showShareModal = true;
             this.confettiWin();
-        }, 300);
+            this.showShareModal = true;
+            this.confettiWin();
+        }, 1000); // Delayed slightly more for visual effect
+    },
+
+    // Background Music Methods
+    initMusic() {
+        if (!this.bgMusic) {
+            this.bgMusic = new Audio('/audio/wordletta-bg-salsangrahop.wav');
+            this.bgMusic.loop = true;
+            this.bgMusic.volume = this.settings.musicVolume || 0.3;
+        }
+    },
+
+    // Core volume setter - handles both Logic and Persistence if needed
+    setMusicVolume(val) {
+        let newVol = parseFloat(val);
+        this.settings.musicVolume = newVol;
+
+        // Logic: Volume > 0 means 'Music On'. Volume 0 means 'Music Off'
+        if (newVol > 0) {
+            this.settings.music = true;
+            this.settings.lastVolume = newVol; // Update memory while dragging
+        } else {
+            this.settings.music = false;
+        }
+
+        if (this.bgMusic) {
+            this.bgMusic.volume = this.settings.musicVolume;
+        }
+
+        this.updateMusicState();
+    },
+
+    // Called by toggle button (or mute button)
+    toggleMusic() {
+        // If currently playing (vol > 0), Mute it (Vol 0)
+        if (this.settings.music && this.settings.musicVolume > 0) {
+            this.settings.lastVolume = this.settings.musicVolume; // Remember current
+            this.setMusicVolume(0);
+            this.persistVolume(); // Save immediately
+        } else {
+            // Restore previous volume (or default to 0.3 if memory is 0)
+            let restoreVol = this.settings.lastVolume > 0 ? this.settings.lastVolume : 0.3;
+            this.setMusicVolume(restoreVol);
+            this.persistVolume(); // Save immediately
+        }
+    },
+
+    persistVolume() {
+        this.saveData();
+    },
+    updateMusicState() {
+
+        if (!this.bgMusic) this.initMusic();
+
+        // Music plays if:
+        // 1. Enabled in Settings
+        // 2. Not Paused (user or modal)
+        // 3. Game in progress (Not Winner, Not Loser)
+        // 4. Initial Modal Closed (Game 'Started')
+        const shouldPlay = this.settings.music
+            && !this.isPaused
+            && !this.isWinner
+            && !this.isLoser
+            && !this.showNewGameModal;
+
+        if (shouldPlay) {
+            // Only play if not already playing to avoid errors/restarts
+            if (this.bgMusic.paused) {
+                this.bgMusic.play().catch(e => {
+                    // console.warn("Auto-play blocked, waiting for interaction", e);
+                });
+            }
+        } else {
+            if (!this.bgMusic.paused) {
+                this.bgMusic.pause();
+            }
+        }
     }
 
 })
+
