@@ -26,7 +26,7 @@ const LAYER_DEFS = {
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '1.8.1',
+    version: '1.8.2',
     user: null,
     wordLength: 6,
     totalGuesses: 6,
@@ -69,6 +69,7 @@ export default () => ({
 
     // Music State
     bgMusic: null,
+    isTweening: false,
 
 
     resetIdleTimer() {
@@ -915,10 +916,17 @@ export default () => ({
         }
         this.setKeyboardLayout(this.settings.keyboardLayout, false);
     },
-    saveData() {
+    async saveData() {
         // Consolidated save function
         if (this.user) {
-            this.syncStats();
+            try {
+                const userRef = doc(db, "users", this.user.uid);
+                await updateDoc(userRef, {
+                    settings: this.settings
+                });
+            } catch (e) {
+                console.error("Error saving settings", e);
+            }
         } else {
             localStorage.setItem('wordletta_settings', JSON.stringify(this.settings));
         }
@@ -1184,12 +1192,18 @@ export default () => ({
     // Core volume setter - handles both Logic and Persistence if needed
     setMusicVolume(val) {
         let newVol = parseFloat(val);
+        // Clamp between 0 and 1
+        newVol = Math.max(0, Math.min(1, newVol));
+
         this.settings.musicVolume = newVol;
 
         // Logic: Volume > 0 means 'Music On'. Volume 0 means 'Music Off'
         if (newVol > 0) {
             this.settings.music = true;
-            this.settings.lastVolume = newVol; // Update memory while dragging
+            // Only update memory if we are NOT securely tweening (manual drag)
+            if (!this.isTweening) {
+                this.settings.lastVolume = newVol;
+            }
         } else {
             this.settings.music = false;
         }
@@ -1203,17 +1217,58 @@ export default () => ({
 
     // Called by toggle button (or mute button)
     toggleMusic() {
-        // If currently playing (vol > 0), Mute it (Vol 0)
+        const duration = 400; // ms
+        const steps = 20;
+        const intervalTime = duration / steps;
+
+        let startVol = this.settings.musicVolume;
+        let targetVol = 0;
+
+        // Lock volume memory updates during tween
+        this.isTweening = true;
+
+        // If currently on (vol > 0), target is 0.
+        // If currently off (vol == 0), target is lastVolume.
         if (this.settings.music && this.settings.musicVolume > 0) {
-            this.settings.lastVolume = this.settings.musicVolume; // Remember current
-            this.setMusicVolume(0);
-            this.persistVolume(); // Save immediately
+            this.settings.lastVolume = this.settings.musicVolume;
+            targetVol = 0;
         } else {
-            // Restore previous volume (or default to 0.3 if memory is 0)
-            let restoreVol = this.settings.lastVolume > 0 ? this.settings.lastVolume : 0.3;
-            this.setMusicVolume(restoreVol);
-            this.persistVolume(); // Save immediately
+            targetVol = this.settings.lastVolume > 0 ? this.settings.lastVolume : 0.3;
+            // Ensure music state is on so it actually plays during fade in
+            this.settings.music = true;
         }
+
+        const volDiff = targetVol - startVol;
+        let currentStep = 0;
+
+        // Clear any existing interval to prevent fighting
+        if (this._volInterval) clearInterval(this._volInterval);
+
+        this._volInterval = setInterval(() => {
+            currentStep++;
+            // Ease out cubic
+            const progress = currentStep / steps;
+            const ease = 1 - Math.pow(1 - progress, 3);
+
+            let newVol = startVol + (volDiff * ease);
+
+            // Clamp
+            if (currentStep === steps) {
+                newVol = targetVol;
+                clearInterval(this._volInterval);
+                this.isTweening = false; // Unlock
+
+                // Final state update
+                if (targetVol === 0) {
+                    this.settings.music = false;
+                }
+                this.setMusicVolume(newVol);
+                this.persistVolume();
+            } else {
+                this.setMusicVolume(newVol);
+            }
+
+        }, intervalTime);
     },
 
     persistVolume() {

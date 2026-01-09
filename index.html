@@ -137,7 +137,7 @@
                   <img x-show="!settings.music" src="/icons/speaker-on.svg"
                     class="w-4 h-4 opacity-60 hover:opacity-100 transition-opacity dark:invert contrast:invert">
                 </button>
-                <input type="range" min="0" max="1" step="0.1" :value="settings.musicVolume"
+                <input type="range" min="0" max="1" step="0.01" :value="settings.musicVolume"
                   @input="setMusicVolume($event.target.value)" @change="persistVolume()"
                   class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500 hover:accent-indigo-600">
               </div>
@@ -761,7 +761,7 @@
             <!-- Title / Close-->
             <div class="flex items-start justify-between mb-6 border-b border-slate-100 pb-2">
               <h5 class="mr-3 text-slate-800 max-w-none text-xl font-bold">Release Notes <span
-                  class="text-sm font-normal text-slate-400">v1.8.1</span></h5>
+                  class="text-sm font-normal text-slate-400">v1.8.2</span></h5>
               <button type="button" class="text-2xl font-bold text-slate-400 hover:text-slate-600 cursor-pointer"
                 @click="showReleaseNotesModal = false">&times;</button>
             </div>
@@ -769,16 +769,23 @@
             <!-- content -->
             <div class="text-slate-700 text-sm overflow-y-auto max-h-[60vh] pr-2">
               <div class="mb-6">
-                <h4 class="font-bold text-indigo-500 mb-2 text-base">🎵 Background Music & Volume</h4>
+                <h4 class="font-bold text-indigo-500 mb-2 text-base">🔊 Smoother Sounds</h4>
                 <ul class="list-disc list-outside ml-4 space-y-1 text-slate-500">
-                  <li><strong>Tunes:</strong> Added soothing background music (Salsangrahop). Toggle in Settings.</li>
-                  <li><strong>Volume Control:</strong> Click the speaker icon in the header for quick access.</li>
-                  <li><strong>Smart Mute:</strong> Mute saves your volume level. Unmute restores it perfectly.</li>
+                  <li><strong>Volume Fix:</strong> Fixed an issue where volume settings wouldn't stick.</li>
+                  <li><strong>Smooth Fades:</strong> Music now fades in and out smoothly when toggled.</li>
+                  <li><strong>Refined Slider:</strong> Volume slider is now much smoother to operate.</li>
                 </ul>
               </div>
 
               <div class="mb-6">
                 <h4 class="font-bold text-slate-400 mb-2 text-base">PREVIOUS UPDATES</h4>
+                <div class="opacity-75 mb-3">
+                  <h5 class="font-bold text-indigo-600 mb-1">v1.8.1</h5>
+                  <ul class="list-disc list-outside ml-4 space-y-1 text-slate-500 text-xs">
+                    <li>Background Music (Salsangrahop)</li>
+                    <li>Volume Controls</li>
+                  </ul>
+                </div>
                 <div class="opacity-75 mb-3">
                   <h5 class="font-bold text-rose-500 mb-1">v1.7.0</h5>
                   <ul class="list-disc list-outside ml-4 space-y-1 text-slate-500 text-xs">
