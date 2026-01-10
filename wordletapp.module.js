@@ -26,7 +26,7 @@ const LAYER_DEFS = {
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '1.8.3',
+    version: '1.8.4',
     user: null,
     wordLength: 6,
     totalGuesses: 6,
@@ -636,7 +636,7 @@ export default () => ({
         // build full shareBlurb
         // Configurable APP_NAME / URL
         const appName = import.meta.env.VITE_APP_NAME || 'WordLetta';
-        const appUrl = import.meta.env.VITE_APP_URL || 'wordletta.com'; // fallback if env missing
+        const appUrl = import.meta.env.VITE_APP_URL || 'wordletta.com'; // fallback to partial match if env missing
 
         // Date format: "Jan 6"
         const dateOptions = { month: 'short', day: 'numeric' };
@@ -650,7 +650,7 @@ export default () => ({
         let blurb = `${appName} | ${title} | ${phrase}\n`
             + (this.isWinner ? '✔️' : '❌') + ' ' + this.numGuesses + '/6\n'
             + this.shareBlurb
-            + `\n${appUrl}`;
+            + `\nVisit ${appUrl} to play!`;
 
         if (asImage) {
             try {
