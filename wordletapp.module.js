@@ -26,7 +26,7 @@ const LAYER_DEFS = {
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '1.8.2',
+    version: '1.8.3',
     user: null,
     wordLength: 6,
     totalGuesses: 6,
@@ -654,7 +654,7 @@ export default () => ({
 
         if (asImage) {
             try {
-                const blob = await this.generateResultImage(title, this.isWinner ? 'WON' : 'LOST', this.numGuesses + '/6');
+                const blob = await this.generateResultImage(title, this.isWinner ? 'WON' : 'LOST', this.numGuesses + '/6', appUrl);
                 const file = new File([blob], 'wordletta-result.png', { type: 'image/png' });
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
                     await navigator.share({
@@ -693,7 +693,7 @@ export default () => ({
             });
         }
     },
-    generateResultImage(title, status, score) {
+    generateResultImage(title, status, score, url = 'wordletta.com') {
         return new Promise((resolve) => {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
@@ -758,7 +758,7 @@ export default () => ({
             // Footer
             ctx.font = '16px Lato';
             ctx.fillStyle = '#94a3b8'; // slate-400
-            ctx.fillText('wordletta.com', width / 2, height - 20);
+            ctx.fillText(url, width / 2, height - 20);
 
             canvas.toBlob((blob) => {
                 resolve(blob);
@@ -778,6 +778,7 @@ export default () => ({
             "duration": duration
         }
         if (this.dailyChallenge) {
+            statsObj.dailyChallengeDay = this.dailyChallengeDay
             this.dailyStats[this.dailyChallengeDay] = statsObj
             this.dailyChallengeComplete = true
         }
@@ -826,6 +827,34 @@ export default () => ({
                 this.settings = { ...this.settings, ...data.settings };
                 // Apply theme if loaded
                 if (this.settings.theme) this.updateBodyClass();
+            }
+
+            // Sync Daily Challenge Status (Remote -> Local)
+            const todayIndex = this.dailyChallengeDay;
+            // 1. Check for games explicitly tagged (Newer version games)
+            let dailyWin = this.endlessStats.find(g => g.dailyChallengeDay === todayIndex && g.isWinner);
+
+            // 2. Fallback: Check for legacy games (match by word content)
+            if (!dailyWin) {
+                try {
+                    const response = await fetch('./words/daily-challenge.js');
+                    const dailyWords = await response.json();
+                    const todaysWord = dailyWords[todayIndex];
+                    if (todaysWord) {
+                        dailyWin = this.endlessStats.find(g => g.answer === todaysWord.toUpperCase() && g.isWinner);
+                        if (dailyWin) {
+                            // Backfill the tag locally for consistency
+                            dailyWin.dailyChallengeDay = todayIndex;
+                        }
+                    }
+                } catch (e) {
+                    console.error("Error verifying daily challenge legacy status", e);
+                }
+            }
+
+            if (dailyWin) {
+                this.dailyChallengeComplete = true;
+                this.dailyStats[todayIndex] = dailyWin;
             }
         } else {
             // New user doc
