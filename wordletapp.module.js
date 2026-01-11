@@ -26,17 +26,23 @@ const LAYER_DEFS = {
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '1.8.4',
+    version: '1.8.5',
     user: null,
     wordLength: 6,
     totalGuesses: 6,
     correctLetters: 0,
     cursor: 1,
     hardMode: false,
+    isShaking: false, // New state for shake animation
     isClearing: false,
     isWinner: false,
     isLoser: false,
     isReadyToCheck: false,
+
+    // PWA State
+    installPrompt: null,
+    showInstallPrompt: false,
+    dictionaryDef: null,
     showNewGameModal: true,
     showShareModal: false,
     showStatsModal: false,
@@ -137,6 +143,18 @@ export default () => ({
             // giving a slight delay to allow interaction to register if it's the first close
             setTimeout(() => { this.updateMusicState(); }, 100);
         });
+
+        // PWA Install Prompt Listener
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            this.installPrompt = e;
+            this.showInstallPrompt = true;
+        });
+
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js');
+        }
 
     },
 
@@ -384,6 +402,16 @@ export default () => ({
         this.updateMusicState();
 
     },
+    async installPWA() {
+        if (!this.installPrompt) return;
+        this.installPrompt.prompt();
+        const { outcome } = await this.installPrompt.userChoice;
+        this.installPrompt = null;
+        this.showInstallPrompt = false;
+    },
+    dismissInstall() {
+        this.showInstallPrompt = false;
+    },
     keyPressed() {
         // handle keyboard events
         const k = this.$event.key
@@ -402,13 +430,45 @@ export default () => ({
             this.letterClicked(k.toUpperCase())
         }
     },
+    // PWA State
+    installPrompt: null,
+    showInstallPrompt: false,
+    dictionaryDef: null, // Dictionary Definition
+    // ...
     newGame(force = false) {
         if (!force && this.numGuesses > 0 && !this.isWinner && !this.isLoser) {
             if (!confirm("Game in progress! Are you sure you want to quit?")) return;
         }
         this.showStatsModal = false
         this.showNewGameModal = false
+        this.dictionaryDef = null; // Reset definition
         this.init()
+    },
+    async lookupDefinition() {
+        if (!this.answer) return;
+        try {
+            const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${this.answer}`);
+            const data = await res.json();
+            if (Array.isArray(data) && data.length > 0) {
+                // Get first definition of first meaning
+                const firstMeaning = data[0].meanings[0];
+                if (firstMeaning && firstMeaning.definitions.length > 0) {
+                    this.dictionaryDef = {
+                        word: data[0].word,
+                        phonetic: data[0].phonetic,
+                        partOfSpeech: firstMeaning.partOfSpeech,
+                        definition: firstMeaning.definitions[0].definition
+                    };
+                } else {
+                    this.dictionaryDef = { definition: "No definition found." };
+                }
+            } else {
+                this.dictionaryDef = { definition: "No definition found." };
+            }
+        } catch (e) {
+            console.error("Dictionary lookup failed", e);
+            this.dictionaryDef = { definition: "Could not fetch definition." };
+        }
     },
     evaluateGuess() {
         // reset
@@ -486,6 +546,11 @@ export default () => ({
 
             // B. Push latest guess to history (triggers slide-in of new row)
             this.guesses.push(this.letters.join(''))
+
+            // SAVE PROGRESS (Only for Daily Challenge)
+            if (this.dailyChallenge && this.user) {
+                this.saveDailyProgress();
+            }
 
             // CHECK: winner? (Delayed notification to match visual)
             if (this.correctLetters == this.wordLength) {
@@ -814,6 +879,21 @@ export default () => ({
             // for strict privacy, clear. for UX, maybe keep. Let's clear to show distinct states.
         });
     },
+    async saveDailyProgress() {
+        if (!this.user) return;
+        try {
+            const userRef = doc(db, "users", this.user.uid);
+            await updateDoc(userRef, {
+                dailyProgress: {
+                    day: this.dailyChallengeDay,
+                    guesses: this.guesses,
+                    timestamp: new Date().toISOString()
+                }
+            });
+        } catch (e) {
+            console.error("Error saving daily progress", e);
+        }
+    },
     async syncStats() {
         if (!this.user || !db) return;
         const userRef = doc(db, "users", this.user.uid);
@@ -855,6 +935,59 @@ export default () => ({
             if (dailyWin) {
                 this.dailyChallengeComplete = true;
                 this.dailyStats[todayIndex] = dailyWin;
+            } else if (data.dailyProgress && data.dailyProgress.day === todayIndex && !this.dailyChallengeComplete) {
+                // Restore In-Progress Daily Challenge
+                console.log("Restoring in-progress Daily Challenge game...");
+                this.dailyChallenge = true;
+                this.showNewGameModal = false; // Close modal start game
+
+                // Force fetch daily words if needed
+                if (!this.wordList.length || this.wordLength !== 6) {
+                    try {
+                        let response = await fetch('./words/daily-challenge.js');
+                        this.wordList = await response.json();
+                        this.wordLength = 6;
+                        this.hardMode = false;
+                    } catch (e) { console.error("Error fetching daily words for restore", e); }
+                }
+                if (this.wordList[todayIndex]) {
+                    this.answer = this.wordList[todayIndex].toUpperCase();
+                }
+
+                // Restore Guesses
+                const savedGuesses = data.dailyProgress.guesses || [];
+                this.guesses = [];
+
+                savedGuesses.forEach(g => {
+                    this.guesses.push(g);
+                    // Re-calculate local state (colors)
+                    // logic simplified from evaluateGuess for restoration
+                    let answerClone = this.answer.split('');
+                    let currentBoxStatus = new Array(6).fill(0);
+                    let letters = g.split('');
+
+                    // 1. Exact matches
+                    letters.forEach((l, i) => {
+                        if (l === answerClone[i]) {
+                            this.alphabetStatus[this.alphabet.indexOf(l)] = 2;
+                            currentBoxStatus[i] = 2;
+                            answerClone[i] = null;
+                        }
+                    });
+                    // 2. Partial matches
+                    letters.forEach((l, i) => {
+                        if (l && answerClone.includes(l)) {
+                            if (this.alphabetStatus[this.alphabet.indexOf(l)] !== 2) this.alphabetStatus[this.alphabet.indexOf(l)] = 1;
+                            if (!currentBoxStatus[i]) currentBoxStatus[i] = 1;
+                            answerClone[answerClone.indexOf(l)] = null;
+                        } else if (l) {
+                            if (this.alphabetStatus[this.alphabet.indexOf(l)] === '') this.alphabetStatus[this.alphabet.indexOf(l)] = 0;
+                        }
+                    });
+                    this.guessStatus.push(currentBoxStatus.join(''));
+                });
+
+                this.showMessage("Daily Challenge Restored", 3000);
             }
         } else {
             // New user doc
