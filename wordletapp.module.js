@@ -887,6 +887,7 @@ export default () => ({
                 dailyProgress: {
                     day: this.dailyChallengeDay,
                     guesses: this.guesses,
+                    gameTime: this.gameTime,
                     timestamp: new Date().toISOString()
                 }
             });
@@ -941,15 +942,18 @@ export default () => ({
                 this.dailyChallenge = true;
                 this.showNewGameModal = false; // Close modal start game
 
-                // Force fetch daily words if needed
-                if (!this.wordList.length || this.wordLength !== 6) {
-                    try {
-                        let response = await fetch('./words/daily-challenge.js');
-                        this.wordList = await response.json();
-                        this.wordLength = 6;
-                        this.hardMode = false;
-                    } catch (e) { console.error("Error fetching daily words for restore", e); }
-                }
+                // Restore Timer
+                this.gameTime = data.dailyProgress.gameTime || 0;
+
+                // CRITICAL: Force fetch daily words to ensure answer key is correct
+                // (Even if wordList is length > 0, it might be the random list)
+                try {
+                    let response = await fetch('./words/daily-challenge.js');
+                    this.wordList = await response.json();
+                    this.wordLength = 6;
+                    this.hardMode = false;
+                } catch (e) { console.error("Error fetching daily words for restore", e); }
+
                 if (this.wordList[todayIndex]) {
                     this.answer = this.wordList[todayIndex].toUpperCase();
                 }
@@ -957,6 +961,11 @@ export default () => ({
                 // Restore Guesses
                 const savedGuesses = data.dailyProgress.guesses || [];
                 this.guesses = [];
+                // Reset statuses to ensure clean slate for coloring
+                this.guessStatus = [];
+                // We should probably reset alphabetStatus too, but if they played before...
+                // Safest to rebuild it from the guesses.
+                this.alphabetStatus = new Array(this.alphabet.length).fill('');
 
                 savedGuesses.forEach(g => {
                     this.guesses.push(g);
