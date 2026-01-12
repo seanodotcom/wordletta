@@ -441,6 +441,11 @@ export default () => ({
         this.dailyChallenge = true;
         this.showNewGameModal = false;
 
+        // Explicitly reset game-over state so input is not blocked
+        this.isWinner = false;
+        this.isLoser = false;
+        this.isClearing = false;
+
         // Ensure user is logged in for the restore flow to work effectively 
         // (though we already checked this in syncStats to set the flag)
 
