@@ -1070,61 +1070,6 @@ export default () => ({
                 // this.dailyChallenge = true; <-- WAS CAUSING BUG
                 // this.showNewGameModal = false; <-- WAS CAUSING BUG
 
-                // Restore Timer
-                this.gameTime = data.dailyProgress.gameTime || 0;
-
-                // CRITICAL: Force fetch daily words to ensure answer key is correct
-                // (Even if wordList is length > 0, it might be the random list)
-                try {
-                    let response = await fetch('./words/daily-challenge.js');
-                    this.wordList = await response.json();
-                    this.wordLength = 6;
-                    this.hardMode = false;
-                } catch (e) { console.error("Error fetching daily words for restore", e); }
-
-                if (this.wordList[todayIndex]) {
-                    this.answer = this.wordList[todayIndex].toUpperCase();
-                }
-
-                // Restore Guesses
-                const savedGuesses = data.dailyProgress.guesses || [];
-                this.guesses = [];
-                // Reset statuses to ensure clean slate for coloring
-                this.guessStatus = [];
-                // We should probably reset alphabetStatus too, but if they played before...
-                // Safest to rebuild it from the guesses.
-                this.alphabetStatus = new Array(this.alphabet.length).fill('');
-
-                savedGuesses.forEach(g => {
-                    this.guesses.push(g);
-                    // Re-calculate local state (colors)
-                    // logic simplified from evaluateGuess for restoration
-                    let answerClone = this.answer.split('');
-                    let currentBoxStatus = new Array(6).fill(0);
-                    let letters = g.split('');
-
-                    // 1. Exact matches
-                    letters.forEach((l, i) => {
-                        if (l === answerClone[i]) {
-                            this.alphabetStatus[this.alphabet.indexOf(l)] = 2;
-                            currentBoxStatus[i] = 2;
-                            answerClone[i] = null;
-                        }
-                    });
-                    // 2. Partial matches
-                    letters.forEach((l, i) => {
-                        if (l && answerClone.includes(l)) {
-                            if (this.alphabetStatus[this.alphabet.indexOf(l)] !== 2) this.alphabetStatus[this.alphabet.indexOf(l)] = 1;
-                            if (!currentBoxStatus[i]) currentBoxStatus[i] = 1;
-                            answerClone[answerClone.indexOf(l)] = null;
-                        } else if (l) {
-                            if (this.alphabetStatus[this.alphabet.indexOf(l)] === '') this.alphabetStatus[this.alphabet.indexOf(l)] = 0;
-                        }
-                    });
-                    this.guessStatus.push(currentBoxStatus.join(''));
-                });
-
-                this.showMessage("Daily Challenge Restored", 3000);
             }
         } else {
             // New user doc
