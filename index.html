@@ -339,7 +339,8 @@
             @click.away="showNewGameModal = false">
             <!-- Title / Close-->
             <div class="flex items-start justify-between">
-              <h5 class="mr-3 mb-4 text-slate-800 max-w-none text-2xl font-bold">New WordLetta</h5>
+              <h5 class="mr-3 mb-4 text-slate-800 max-w-none text-2xl font-bold">New WordLetta <span
+                  class="text-sm font-normal text-slate-300 ml-2">v<span x-text="version"></span></span></h5>
               <button type="button" class="z-50 text-2xl font-bold text-slate-400 hover:text-slate-600 cursor-pointer"
                 @click="showNewGameModal = false">&times;</button>
             </div>
@@ -823,7 +824,7 @@
 
 
             <div class="mt-8 text-center">
-              <div @click="showReleaseNotesModal = true; showSettingsModal = false"
+              <div @click="toggleReleaseNotes()"
                 class="text-xs text-slate-300 hover:text-indigo-500 cursor-pointer transition-colors underline decoration-slate-200 hover:decoration-indigo-500">
                 v<span x-text="version"></span></div>
             </div>
@@ -843,119 +844,103 @@
             <!-- Title / Close-->
             <div class="flex items-start justify-between mb-6 border-b border-slate-100 pb-2">
               <h5 class="mr-3 text-slate-800 max-w-none text-xl font-bold">Release Notes <span
-                  class="text-sm font-normal text-slate-400">v1.8.5</span></h5>
+                  class="text-sm font-normal text-slate-400">v<span x-text="version"></span></span></h5>
               <button type="button" class="text-2xl font-bold text-slate-400 hover:text-slate-600 cursor-pointer"
                 @click="showReleaseNotesModal = false">&times;</button>
             </div>
 
             <!-- content -->
             <div class="text-slate-700 text-sm overflow-y-auto max-h-[60vh] pr-2">
-              <div class="mb-6">
-                <h4 class="font-bold text-emerald-500 mb-2 text-base">✨ What's New</h4>
-                <ul class="list-disc list-outside ml-4 space-y-1 text-slate-500">
-                  <li><strong>Dictionary:</strong> Look up definitions after the game!</li>
-                  <li><strong>Polished:</strong> Invalid words shake and vibrate.</li>
-                  <li><strong>Native Feel:</strong> Install as an App on your phone.</li>
-                </ul>
-              </div>
+              <!-- Release Notes Content -->
+              <div class="space-y-4">
 
-              <div class="mb-6">
-                <h4 class="font-bold text-slate-400 mb-2 text-base">PREVIOUS UPDATES</h4>
-                <div class="opacity-75 mb-3">
-                  <h5 class="font-bold text-indigo-600 mb-1">v1.8.1</h5>
-                  <ul class="list-disc list-outside ml-4 space-y-1 text-slate-500 text-xs">
-                    <li>Background Music (Salsangrahop)</li>
-                    <li>Volume Controls</li>
+                <div class="border-l-4 border-indigo-500 pl-4 py-1">
+                  <h3 class="font-bold text-lg text-slate-800">v1.9.2: Modal Harmony</h3>
+                  <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
+                    <li>🐛 <b>Pause Logic:</b> Fixed "Game Paused" overlay appearing over other modals.</li>
+                    <li>⏱️ <b>Timer:</b> Resolved issue where timer wouldn't resume after viewing Release Notes.</li>
+                    <li>📋 <b>Notes:</b> Organized Release Notes by date (newest first).</li>
                   </ul>
                 </div>
-                <div class="opacity-75 mb-3">
-                  <h5 class="font-bold text-rose-500 mb-1">v1.7.0</h5>
-                  <ul class="list-disc list-outside ml-4 space-y-1 text-slate-500 text-xs">
-                    <li>Streaks & Fire Mode</li>
-                    <li>Haptics (Mobile)</li>
-                    <li>Themes (Dark/Contrast)</li>
+
+                <div class="border-l-4 border-slate-300 pl-4 py-1 opacity-75">
+                  <h3 class="font-bold text-lg text-slate-800">v1.9.1: Polish & Fixes</h3>
+                  <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
+                    <li>🐛 <b>Validation:</b> Fixed issue with case-sensitivity in word checks.</li>
+                    <li>⏸️ <b>Pause Modal:</b> Fixed overlay visibility issues.</li>
                   </ul>
                 </div>
-                <div class="opacity-75 mb-3">
-                  <h5 class="font-bold text-indigo-600 mb-1">v1.5.0</h5>
-                  <ul class="list-disc list-outside ml-4 space-y-1 text-slate-500 text-xs">
-                    <li>Sweet Animations & Morphing Tiles</li>
-                    <li>UI Polish</li>
+
+                <div class="border-l-4 border-slate-300 pl-4 py-1 opacity-75">
+                  <h3 class="font-bold text-lg text-slate-800">v1.9.0: The Restoration Update</h3>
+                  <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
+                    <li>💾 <b>Robust Restore:</b> Daily Challenge progress now saves reliably.</li>
+                    <li>⏱️ <b>Smart Timer:</b> Timer continues exactly where you left off.</li>
+                    <li>🚫 <b>Shake It:</b> Invalid words now trigger shake & sound effects.</li>
+                    <li>⌨️ <b>Inputs:</b> Enter key only active when word is full length.</li>
+                    <li>🐛 <b>Fixes:</b> Solved frozen keyboard & game mode switching bugs.</li>
                   </ul>
                 </div>
-                <div class="opacity-75 mb-3">
-                  <h5 class="font-bold text-indigo-600 mb-1">v1.4.3</h5>
-                  <ul class="list-disc list-outside ml-4 space-y-1 text-slate-500 text-xs">
-                    <li>Celebration Confetti & Smart Dates</li>
-                    <li>Enhanced Sharing (Grid + Fun Phrases)</li>
+
+                <div class="border-l-4 border-slate-300 pl-4 py-1 opacity-75">
+                  <h3 class="font-bold text-lg text-slate-800">v1.8.5: The "Features" Update</h3>
+                  <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
+                    <li>📳 <b>Shake it off:</b> Invalid words now shake (and vibrate!)</li>
+                    <li>💾 <b>Daily Restore:</b> Progress saves so you can resume later.</li>
+                    <li>📱 <b>Install:</b> Add WordLetta to your home screen!</li>
+                    <li>📖 <b>Define:</b> Learn new words with the Dictionary lookup.</li>
                   </ul>
                 </div>
-                <!-- Release Notes Content -->
-                <div class="space-y-4">
-                  <div class="border-l-4 border-indigo-500 pl-4 py-1">
-                    <h3 class="font-bold text-lg text-slate-800">v1.9.0: The Restoration Update</h3>
-                    <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
-                      <li>💾 <b>Robust Restore:</b> Daily Challenge progress now saves reliably.</li>
-                      <li>⏱️ <b>Smart Timer:</b> Timer continues exactly where you left off.</li>
-                      <li>🚫 <b>Shake It:</b> Invalid words now trigger shake & sound effects.</li>
-                      <li>⌨️ <b>Inputs:</b> Enter key only active when word is full length.</li>
-                      <li>🐛 <b>Fixes:</b> Solved frozen keyboard & game mode switching bugs.</li>
-                    </ul>
-                  </div>
-                  <div class="border-l-4 border-emerald-500 pl-4 py-1 opacity-75">
-                    <h3 class="font-bold text-lg text-slate-800">v1.8.5: The "Features" Update</h3>
-                    <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
-                      <li>📳 <b>Shake it off:</b> Invalid words now shake (and vibrate!)</li>
-                      <li>💾 <b>Daily Restore:</b> Progress saves so you can resume later.</li>
-                      <li>📱 <b>Install:</b> Add WordLetta to your home screen!</li>
-                      <li>📖 <b>Define:</b> Learn new words with the Dictionary lookup.</li>
-                    </ul>
-                  </div>
-                  <div class="border-l-4 border-indigo-500 pl-4 py-1 opacity-75">
-                    <h3 class="font-bold text-lg text-slate-800">v1.8.3: Daily Sync</h3>
-                    <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
-                      <li>🔄 <b>Daily Challenge:</b> Fixed a bug where completing the challenge on one device didn't
-                        update others.</li>
-                    </ul>
-                  </div>
-                  <div class="border-l-4 border-rose-500 pl-4 py-1">
-                    <h3 class="font-bold text-lg text-slate-800">v1.7.2: Hotfix II - The Sequel</h3>
-                    <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
-                      <li>🐛 <b>Keyboard Colors:</b> Fixed a persistent bug where keys lost their status.</li>
-                    </ul>
-                  </div>
-                  <div class="border-l-4 border-rose-500 pl-4 py-1 opacity-75">
-                    <h3 class="font-bold text-lg text-slate-800">v1.7.1: Hotfix</h3>
-                    <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
-                      <li>⌨️ <b>Keyboard:</b> Fixed an issue where the keyboard could disappear.</li>
-                    </ul>
-                  </div>
-                  <div class="border-l-4 border-indigo-500 pl-4 py-1 opacity-75">
-                    <h3 class="font-bold text-lg text-slate-800">v1.7.0: Themes & Time!</h3>
-                    <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
-                      <li>🎨 <b>Themes:</b> Added Dark Mode & High Contrast Mode.</li>
-                      <li>⏱️ <b>Timer:</b> New m:ss format with Pause feature.</li>
-                      <li>⏸️ <b>Auto-Pause:</b> Game parses after 1 min of inactivity.</li>
-                      <li>💅 <b>Polish:</b> Restored Classic Logo (transparent!) & clearer grid.</li>
-                    </ul>
-                  </div>
-                  <div class="border-l-4 border-slate-300 pl-4 py-1 opacity-75">
-                    <h3 class="font-bold text-lg text-slate-800">v1.6.0: Feel the Heat</h3>
-                    <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
-                      <li>🔥 <b>Streaks:</b> Track your daily wins!</li>
-                      <li>📳 <b>Haptics:</b> Vibration feedback on mobile.</li>
-                      <li>🌋 <b>Fire Mode:</b> Board glows hot on high streaks.</li>
-                    </ul>
-                  </div>
-                </div>
-                <div class="opacity-75">
-                  <h5 class="font-bold text-indigo-600 mb-1">v1.3.0</h5>
-                  <ul class="list-disc list-outside ml-4 space-y-1 text-slate-500 text-xs">
-                    <li>Mechanical Audio Engine (Click & Thock)</li>
-                    <li>Pro Keyboard Layouts (Dvorak, Alpha)</li>
-                    <li>Ludicrous Mode & UI Polish</li>
+
+                <div class="border-l-4 border-slate-300 pl-4 py-1 opacity-75">
+                  <h3 class="font-bold text-lg text-slate-800">v1.8.3: Daily Sync</h3>
+                  <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
+                    <li>🔄 <b>Daily Challenge:</b> Fixed a bug where completing the challenge on one device didn't
+                      update others.</li>
                   </ul>
                 </div>
+
+                <div class="border-l-4 border-slate-300 pl-4 py-1 opacity-75">
+                  <h3 class="font-bold text-lg text-slate-800">v1.8.1: Audio & Haptics</h3>
+                  <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
+                    <li>🎵 <b>Background Music:</b> Added "Salsangrahop" track.</li>
+                    <li>🔊 <b>Volume Controls:</b> Fine-tune your audio experience.</li>
+                  </ul>
+                </div>
+
+                <div class="border-l-4 border-slate-300 pl-4 py-1 opacity-75">
+                  <h3 class="font-bold text-lg text-slate-800">v1.7.2: Hotfix II</h3>
+                  <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
+                    <li>🐛 <b>Keyboard Colors:</b> Fixed a persistent bug where keys lost their status.</li>
+                  </ul>
+                </div>
+
+                <div class="border-l-4 border-slate-300 pl-4 py-1 opacity-75">
+                  <h3 class="font-bold text-lg text-slate-800">v1.7.0: Themes & Time!</h3>
+                  <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
+                    <li>🎨 <b>Themes:</b> Added Dark Mode & High Contrast Mode.</li>
+                    <li>⏱️ <b>Timer:</b> New m:ss format with Pause feature.</li>
+                    <li>⏸️ <b>Auto-Pause:</b> Game parses after 1 min of inactivity.</li>
+                  </ul>
+                </div>
+
+                <div class="border-l-4 border-slate-300 pl-4 py-1 opacity-75">
+                  <h3 class="font-bold text-lg text-slate-800">v1.6.0: Feel the Heat</h3>
+                  <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
+                    <li>🔥 <b>Streaks:</b> Track your daily wins!</li>
+                    <li>📳 <b>Haptics:</b> Vibration feedback on mobile.</li>
+                    <li>🌋 <b>Fire Mode:</b> Board glows hot on high streaks.</li>
+                  </ul>
+                </div>
+
+                <div class="border-l-4 border-slate-300 pl-4 py-1 opacity-75">
+                  <h3 class="font-bold text-lg text-slate-800">v1.5.0: Smooth Moves</h3>
+                  <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
+                    <li>✨ <b>Animations:</b> Sweet new tile merging and morphing effects.</li>
+                    <li>💅 <b>Polish:</b> UI refinements and ghost rows.</li>
+                  </ul>
+                </div>
+
               </div>
 
               <div class="text-xs text-slate-400 text-center mt-8 italic">
@@ -1036,7 +1021,7 @@
           <span class="cursor-pointer hover:text-white transition-colors"
             @click="showNewGameModal = true">WORDLETTA</span> <span
             class="ml-1 inline-flex items-center gap-0.5 text-slate-400 font-normal font-sans cursor-pointer hover:text-indigo-400 transition-colors"
-            @click="showReleaseNotesModal = true">
+            @click="toggleReleaseNotes()">
             v<span x-text="version" class="text-xs"></span>
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
               stroke="currentColor">
@@ -1063,7 +1048,7 @@
       </div>
     </footer>
     <!-- PAUSE MODAL -->
-    <div x-show="isPaused && !showHelpModal && !showReleaseNotesModal" style="display: none;" x-transition.opacity.duration.300ms
+    <div x-show="isPauseModalVisible" style="display: none;" x-transition.opacity.duration.300ms
       class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-md">
       <div
         class="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-2xl text-center transform scale-100 border border-slate-200 dark:border-slate-700">

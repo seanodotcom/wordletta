@@ -26,7 +26,7 @@ const LAYER_DEFS = {
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '1.9.1',
+    version: '1.9.2',
     user: null,
     wordLength: 6,
     totalGuesses: 6,
@@ -38,6 +38,9 @@ export default () => ({
     isWinner: false,
     isLoser: false,
     isReadyToCheck: false,
+    pausedByModal: false,
+    showPauseMenu: false, // UI Overlay state
+    wasPauseMenuOpen: false, // State memory
 
     // PWA State
     installPrompt: null,
@@ -90,58 +93,19 @@ export default () => ({
 
     // init() removed (merged into main init below)
     setupWatchers() {
-        this.$watch('showSettingsModal', (value) => {
-            if (value) {
-                // Modal Opening: Pause if running
-                if (this.timerStarted && !this.isPaused && !this.isWinner && !this.isLoser) {
-                    this.togglePause();
-                    this.pausedByModal = true;
-                }
-            } else {
-                // Modal Closing: Resume if it was paused by modal
-                if (this.timerStarted && this.isPaused && !this.isWinner && !this.isLoser) {
-                    if (this.pausedByModal) {
-                        this.togglePause();
-                        this.pausedByModal = false;
-                    }
-                }
-            }
-        });
+        const modalWatcher = (value) => {
+            this.checkModalPauseState();
+        };
+
+        this.$watch('showSettingsModal', modalWatcher);
         this.$watch('showHelpModal', (value) => {
-            if (value) {
-                if (this.timerStarted && !this.isPaused && !this.isWinner && !this.isLoser) {
-                    this.togglePause();
-                    this.pausedByModal = true;
-                }
-                this.updateMusicState();
-            } else {
-                if (this.timerStarted && this.isPaused && !this.isWinner && !this.isLoser) {
-                    if (this.pausedByModal) {
-                        this.togglePause();
-                        this.pausedByModal = false;
-                    }
-                }
-                this.updateMusicState();
-            }
+            this.checkModalPauseState();
+            this.updateMusicState();
         });
-
-        this.$watch('showReleaseNotesModal', (value) => {
-            if (value) {
-                if (this.timerStarted && !this.isPaused && !this.isWinner && !this.isLoser) {
-                    this.togglePause();
-                    this.pausedByModal = true;
-                }
-            } else {
-                if (this.timerStarted && this.isPaused && !this.isWinner && !this.isLoser && this.pausedByModal) {
-                    this.togglePause();
-                    this.pausedByModal = false;
-                }
-            }
-        });
-
-        // Watch for New Game modal to handle music start
+        this.$watch('showReleaseNotesModal', modalWatcher);
+        this.$watch('showStatsModal', modalWatcher);
         this.$watch('showNewGameModal', (value) => {
-            // giving a slight delay to allow interaction to register if it's the first close
+            this.checkModalPauseState();
             setTimeout(() => { this.updateMusicState(); }, 100);
         });
 
@@ -157,6 +121,36 @@ export default () => ({
             navigator.serviceWorker.register('./sw.js');
         }
 
+    },
+
+    checkModalPauseState() {
+        if (this.isAnyModalOpen) {
+            // OPENING:
+            // 1. Hide the Pause Menu if it's open (so we can see the modal)
+            if (this.showPauseMenu) {
+                this.wasPauseMenuOpen = true;
+                this.showPauseMenu = false;
+            }
+            // 2. Pause the game if it's running
+            if (this.timerStarted && !this.isPaused && !this.isWinner && !this.isLoser) {
+                this.setPause(true);
+                this.pausedByModal = true;
+            }
+        } else {
+            // CLOSING:
+            // 1. Resume game if WE paused it
+            if (this.timerStarted && this.isPaused && !this.isWinner && !this.isLoser && this.pausedByModal) {
+                this.setPause(false);
+                this.pausedByModal = false;
+            }
+            // 2. Restore Pause Menu if it was open (and game is still paused/manual)
+            // Note: If we just resumed (above), isPaused is false, so menu shouldn't show.
+            // This really only applies if we DIDN'T resume (because it was manually paused).
+            if (this.wasPauseMenuOpen && this.isPaused) {
+                this.showPauseMenu = true;
+                this.wasPauseMenuOpen = false;
+            }
+        }
     },
 
     LAYER_DEFS: { // Kept for reference or if used elsewhere, but we found it's in module scope now.
@@ -470,11 +464,7 @@ export default () => ({
 
         // Re-run the restore logic that was previously in syncStats
         // Ideally we should have cached the data object, but we might need to re-fetch if we didn't save it.
-        // Actually, syncStats runs on load. If we want to restore "later", we need the data.
-        // Let's re-fetch to be safe and simple, or store 'pendingRestoreData'.
-        // Storing 'pendingRestoreData' is better than another network call if possible, but 
-        // to keep it stateless between modal open/close, let's just re-fetch the user doc or use the local flag + logic?
-        // Wait, 'data' is local to syncStats. 
+        // Actually, 'data' is local to syncStats. 
         // We should move the restore logic into this function and call it from syncStats IF we wanted auto-restore.
         // But now we want manual restore.
 
@@ -1128,10 +1118,14 @@ export default () => ({
         if (this.settings.theme === 'contrast') document.body.classList.add('contrast');
     },
     // Timer Methods
-    startTimer() {
-        if (this.timerStarted || this.isWinner || this.isLoser) return;
+    startTimer(resume = false) {
+        if ((this.timerStarted && !resume) || this.isWinner || this.isLoser) return;
         this.timerStarted = true;
-        this.gameTime = 0;
+        if (!resume) this.gameTime = 0;
+
+        // Clear existing interval just in case
+        if (this.timerInterval) clearInterval(this.timerInterval);
+
         this.timerInterval = setInterval(() => {
             if (!this.isPaused) {
                 this.gameTime += 0.1;
@@ -1150,15 +1144,36 @@ export default () => ({
         }
     },
     togglePause() {
+        // UI Handling: Toggle the Menu
         if (!this.timerStarted || this.isWinner || this.isLoser) return;
-        this.isPaused = !this.isPaused;
+
+        const newState = !this.isPaused;
+        this.setPause(newState);
+        this.showPauseMenu = newState;
+    },
+
+    setPause(shouldPause) {
+        this.isPaused = shouldPause;
 
         if (this.isPaused) {
             if (this.idleTimeout) clearTimeout(this.idleTimeout);
+            if (this.timerInterval) {
+                clearInterval(this.timerInterval);
+                this.timerInterval = null;
+            }
         } else {
             this.resetIdleTimer();
+            this.startTimer(true);
         }
-        this.updateMusicState(); // Pause/Resume music
+        this.updateMusicState();
+    },
+
+    get isAnyModalOpen() {
+        return this.showSettingsModal || this.showHelpModal || this.showReleaseNotesModal || this.showStatsModal || this.showNewGameModal;
+    },
+
+    get isPauseModalVisible() {
+        return this.showPauseMenu;
     },
 
     get formattedTime() {
@@ -1211,6 +1226,16 @@ export default () => ({
             localStorage.setItem('wordletta_settings', JSON.stringify(this.settings));
         }
     },
+    toggleReleaseNotes() {
+        this.showReleaseNotesModal = !this.showReleaseNotesModal;
+        if (this.showReleaseNotesModal) {
+            // Close other modals if needed
+            this.showSettingsModal = false;
+        }
+        // Logic handled by watcher now
+        // this.checkModalPauseState(); // Redundant via watcher but safe
+    },
+
     toggleSound() {
         this.settings.sound = !this.settings.sound;
         this.saveData();
@@ -1472,28 +1497,7 @@ export default () => ({
             this.confettiWin();
         }, 1000); // Delayed slightly more for visual effect
     },
-    // Timer Methods
-    startTimer() {
-        if (!this.timerStarted) {
-            // Adjust start time to account for previously elapsed gameTime
-            // startTime = Now - (elapsed seconds * 1000)
-            this.startTime = new Date(new Date().getTime() - (this.gameTime * 1000));
-            this.timerStarted = true;
-            this.timerInterval = setInterval(() => {
-                this.updateTimer();
-            }, 1000);
-        }
-    },
-    stopTimer() {
-        clearInterval(this.timerInterval);
-        this.timerStarted = false;
-    },
-    updateTimer() {
-        if (!this.timerStarted) return;
-        const now = new Date();
-        const diff = now - this.startTime; // milliseconds
-        this.gameTime = Math.floor(diff / 1000); // seconds
-    },
+
 
     async debugSimulateDailyInProgress() {
         if (!this.user) {
