@@ -26,7 +26,7 @@ const LAYER_DEFS = {
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '1.8.6.4',
+    version: '1.9.0',
     user: null,
     wordLength: 6,
     totalGuesses: 6,
