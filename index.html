@@ -386,7 +386,7 @@
                 </div>
                 <template x-if="!dailyChallengeComplete">
                   <!-- Button changes function based on state -->
-                  <button @click="dailyChallenge = true; (dailyChallengeInProgress) ? restoreDailyGame() : newGame()"
+                  <button @click="startDailyGame()"
                     class="h-12 flex items-center justify-center w-full hover:bg-emerald-600 hover:shadow-lg transition-all transform hover:-translate-y-0.5 py-2 px-6 text-center text-lg font-bold text-white bg-emerald-500 rounded-lg shadow-md">
                     <span class="text-3xl mr-3 font-bold leading-none mb-1">📅</span>
                     <span
@@ -480,7 +480,7 @@
                 </div>
 
                 <div class="grid place-items-center mt-4">
-                  <button @click="dailyChallenge = false; newGame()"
+                  <button @click="startEndlessGame()"
                     class="h-12 flex items-center justify-center w-full hover:bg-indigo-600 hover:shadow-lg transition-all transform hover:-translate-y-0.5 py-2 px-6 text-center text-lg font-bold text-white bg-indigo-500 rounded-lg shadow-md">
                     <span class="text-3xl mr-3 font-bold leading-none mb-1">∞</span> Play Endless Challenge
                   </button>

@@ -26,7 +26,7 @@ const LAYER_DEFS = {
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '1.8.5',
+    version: '1.8.6',
     user: null,
     wordLength: 6,
     totalGuesses: 6,
@@ -1051,10 +1051,12 @@ export default () => ({
                 this.dailyChallengeComplete = true;
                 this.dailyStats[todayIndex] = dailyWin;
             } else if (data.dailyProgress && data.dailyProgress.day === todayIndex && !this.dailyChallengeComplete) {
-                // Restore In-Progress Daily Challenge
-                console.log("Restoring in-progress Daily Challenge game...");
-                this.dailyChallenge = true;
-                this.showNewGameModal = false; // Close modal start game
+                // Restore In-Progress Daily Challenge - DEFERRED
+                // We do NOT restore it automatically. We just flag it.
+                console.log("Found in-progress Daily Challenge. Deferring restore.");
+                this.dailyChallengeInProgress = true;
+                // this.dailyChallenge = true; <-- WAS CAUSING BUG
+                // this.showNewGameModal = false; <-- WAS CAUSING BUG
 
                 // Restore Timer
                 this.gameTime = data.dailyProgress.gameTime || 0;
