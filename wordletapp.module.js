@@ -344,6 +344,25 @@ export default () => ({
             if (local) this.endlessStats = JSON.parse(local);
         }
 
+        // Save progress on page hide/unload
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                if (this.dailyChallenge && this.timerStarted) {
+                    this.updateTimer(); // Ensure latest second is captured
+                    this.saveDailyProgress();
+                }
+            }
+        });
+        window.addEventListener('beforeunload', () => {
+            if (this.dailyChallenge && this.timerStarted) {
+                this.updateTimer();
+                // Best effort synchronous save attempt or beacon?
+                // Firestore is async, so this might not complete. 
+                // visibilitychange is more reliable on mobile.
+                this.saveDailyProgress();
+            }
+        });
+
         // daily challenge complete?
         if (this.dailyStats[this.dailyChallengeDay]) this.dailyChallengeComplete = true
 
