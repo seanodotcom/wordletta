@@ -517,6 +517,22 @@ export default () => ({
             }
         }
     },
+    startEndlessGame() {
+        if (this.dailyChallenge && this.numGuesses > 0 && !this.isWinner && !this.isLoser) {
+            this.showMessage("Finish your Daily Challenge first!");
+            return;
+        }
+        this.dailyChallenge = false;
+        this.newGame(true);
+    },
+    startDailyGame() {
+        if (this.dailyChallengeInProgress) {
+            this.restoreDailyGame();
+        } else {
+            this.dailyChallenge = true;
+            this.newGame(true);
+        }
+    },
     newGame(force = false) {
         // REMOVED native confirm() as per request.
         // Logic for "game in progress" check should happen in the UI before calling this with force=true,
