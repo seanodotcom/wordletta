@@ -1364,6 +1364,19 @@ export default () => ({
             gainNode.gain.linearRampToValueAtTime(0, now + 0.5);
             osc.start(now);
             osc.stop(now + 0.5);
+        } else if (type === 'invalid') {
+            // Short Discordant "Eh-eh"
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, now);
+            osc.frequency.linearRampToValueAtTime(100, now + 0.1);
+
+            gainNode.gain.setValueAtTime(0.2, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+
+            osc.start(now);
+            osc.stop(now + 0.15);
+            // Double beep?
+            // Actually, a single low "donk" is fine.
         }
 
         // Haptic Feedback Trigger (Sync with sound)
