@@ -437,11 +437,11 @@
 
                   <!-- Toggle Wrapper (Clickable) -->
                   <div class="flex flex-row items-center p-2 rounded-lg transition-colors"
-                    :class="(wordLength <= 6 && wordLength > 1) ? 'cursor-pointer hover:bg-slate-50' : 'opacity-100'"
-                    @click="(wordLength <= 6 && wordLength > 1) ? hardMode = !hardMode : null">
+                    :class="(wordLength <= 6) ? 'cursor-pointer hover:bg-slate-50' : 'opacity-100'"
+                    @click="(wordLength <= 6) ? hardMode = !hardMode : null">
 
                     <!-- Lock Icon (only if forced) -->
-                    <template x-if="wordLength > 6 || wordLength == 1">
+                    <template x-if="wordLength > 6">
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-rose-600" viewBox="0 0 20 20"
                         fill="currentColor">
                         <path fill-rule="evenodd"
@@ -854,7 +854,14 @@
               <!-- Release Notes Content -->
               <div class="space-y-4">
 
-                <div class="border-l-4 border-indigo-500 pl-4 py-1">
+                <div class="border-l-4 border-slate-300 pl-4 py-1">
+                  <h3 class="font-bold text-lg text-slate-800">v1.9.3: Tiny Tweak</h3>
+                  <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
+                    <li>🔧 <b>1-Letter Games:</b> Normal mode is now enabled (was locked to Ludicrous).</li>
+                  </ul>
+                </div>
+
+                <div class="border-l-4 border-indigo-500 pl-4 py-1 opacity-75">
                   <h3 class="font-bold text-lg text-slate-800">v1.9.2: Modal Harmony</h3>
                   <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
                     <li>🐛 <b>Pause Logic:</b> Fixed "Game Paused" overlay appearing over other modals.</li>

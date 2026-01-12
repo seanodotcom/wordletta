@@ -26,7 +26,7 @@ const LAYER_DEFS = {
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '1.9.2',
+    version: '1.9.3',
     user: null,
     wordLength: 6,
     totalGuesses: 6,
@@ -291,7 +291,7 @@ export default () => ({
     async fetchWordList(num, level = '') {
         if (!num) return false
         // NOTE: ensure a non-hardMode /words/*.js file exists
-        if (num == 1 || num > 6) this.hardMode = true
+        if (num > 6) this.hardMode = true
         let url = './words/' + num + '-letters.js'
         let hardUrl = './words/' + num + '-letters-hard.js'
         // always fetch hardUrl for valid word comparison
