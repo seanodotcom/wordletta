@@ -518,10 +518,6 @@ export default () => ({
         }
     },
     startEndlessGame() {
-        if (this.dailyChallenge && this.numGuesses > 0 && !this.isWinner && !this.isLoser) {
-            this.showMessage("Finish your Daily Challenge first!");
-            return;
-        }
         this.dailyChallenge = false;
         this.newGame(true);
     },
