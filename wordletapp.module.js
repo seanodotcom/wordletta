@@ -26,7 +26,7 @@ const LAYER_DEFS = {
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '1.9.0',
+    version: '1.9.1',
     user: null,
     wordLength: 6,
     totalGuesses: 6,
@@ -776,7 +776,7 @@ export default () => ({
         const currentParams = this.letters.join('').toUpperCase();
 
         // Validate
-        if (!this.validWordList.includes(currentParams)) {
+        if (!this.validWordList.includes(currentParams.toLowerCase())) {
             this.isShaking = true;
             this.showMessage("Not in word list");
             this.playSound('invalid');
