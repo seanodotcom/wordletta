@@ -376,15 +376,21 @@
               <div class="w-full flex flex-col items-center">
                 <h3 class="text-2xl font-bold my-2 text-indigo-500">Daily Challenge <span
                     x-text="new Date().toLocaleDateString('en-US', {month:'numeric', day:'numeric'})"></span></h3>
+                <!-- Game In Progress Badge -->
+                <div x-show="dailyChallengeInProgress && !dailyChallengeComplete"
+                  class="flex-shrink-0 animate-pulse mb-2">
+                  <span
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 border border-indigo-200 shadow-sm">
+                    Game In Progress
+                  </span>
+                </div>
                 <template x-if="!dailyChallengeComplete">
-                  <button @click="dailyChallenge = true; newGame()"
-                    class="h-12 flex items-center justify-center gap-1.5 w-full hover:bg-indigo-600 hover:shadow-lg transition-all transform hover:-translate-y-0.5 py-2 px-6 text-center text-lg font-bold text-white bg-indigo-500 rounded-lg shadow-md">
-                    <!-- Calendar Icon -->
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                      <path
-                        d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z" />
-                    </svg>
-                    <span>Play Today's Challenge!</span>
+                  <!-- Button changes function based on state -->
+                  <button @click="dailyChallenge = true; (dailyChallengeInProgress) ? restoreDailyGame() : newGame()"
+                    class="h-12 flex items-center justify-center w-full hover:bg-emerald-600 hover:shadow-lg transition-all transform hover:-translate-y-0.5 py-2 px-6 text-center text-lg font-bold text-white bg-emerald-500 rounded-lg shadow-md">
+                    <span class="text-3xl mr-3 font-bold leading-none mb-1">📅</span>
+                    <span
+                      x-text="dailyChallengeInProgress ? 'Finish Today\'s Challenge' : 'Play Today\'s Challenge!'"></span>
                   </button>
                 </template>
                 <template x-if="dailyChallengeComplete"><span
