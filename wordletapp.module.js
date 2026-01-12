@@ -26,7 +26,7 @@ const LAYER_DEFS = {
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '1.8.6',
+    version: '1.8.6.4',
     user: null,
     wordLength: 6,
     totalGuesses: 6,
@@ -1423,6 +1423,29 @@ export default () => ({
             this.confettiWin();
         }, 1000); // Delayed slightly more for visual effect
     },
+    // Timer Methods
+    startTimer() {
+        if (!this.timerStarted) {
+            // Adjust start time to account for previously elapsed gameTime
+            // startTime = Now - (elapsed seconds * 1000)
+            this.startTime = new Date(new Date().getTime() - (this.gameTime * 1000));
+            this.timerStarted = true;
+            this.timerInterval = setInterval(() => {
+                this.updateTimer();
+            }, 1000);
+        }
+    },
+    stopTimer() {
+        clearInterval(this.timerInterval);
+        this.timerStarted = false;
+    },
+    updateTimer() {
+        if (!this.timerStarted) return;
+        const now = new Date();
+        const diff = now - this.startTime; // milliseconds
+        this.gameTime = Math.floor(diff / 1000); // seconds
+    },
+
     async debugSimulateDailyInProgress() {
         if (!this.user) {
             this.showMessage("Please log in to mock cloud save.");
