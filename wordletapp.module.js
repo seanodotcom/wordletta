@@ -764,21 +764,33 @@ export default () => ({
         this.letters[this.cursor] = l
         this.playSound('click');
 
-        // if cursor > word length, and word is valid (in answersN[] array), ready to check
-        if ((this.cursor == this.wordLength - 1) && (this.validWordList.includes(this.guess))) this.isReadyToCheck = true
-
         // advance cursor
         this.cursor++
     },
     enter() {
-        // if guess is not ready, or game is over, do nothing
-        if (!this.isReadyToCheck) return
-        if (this.isWinner || this.isLoser) return
+        // Must be full word
+        if (this.letters.filter(l => l).length !== this.wordLength) return;
+        if (this.isWinner || this.isLoser) return;
+
+        // Construct word
+        const currentParams = this.letters.join('').toUpperCase();
+
+        // Validate
+        if (!this.validWordList.includes(currentParams)) {
+            this.isShaking = true;
+            this.showMessage("Not in word list");
+            this.playSound('invalid');
+            this.triggerHaptic('invalid');
+            setTimeout(() => { this.isShaking = false; }, 500);
+            return;
+        }
 
         // Prevent duplicates
-        if (this.guesses.includes(this.guess.toUpperCase())) {
+        if (this.guesses.includes(currentParams)) {
+            this.isShaking = true;
             this.playSound('backspace');
             this.showMessage("Already guessed!");
+            setTimeout(() => { this.isShaking = false; }, 500);
             return;
         }
 
