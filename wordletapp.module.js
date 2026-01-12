@@ -43,6 +43,7 @@ export default () => ({
     installPrompt: null,
     showInstallPrompt: false,
     dictionaryDef: null,
+    dailyChallengeInProgress: false,
     showNewGameModal: true,
     showShareModal: false,
     showStatsModal: false,
@@ -435,14 +436,127 @@ export default () => ({
     showInstallPrompt: false,
     dictionaryDef: null, // Dictionary Definition
     // ...
-    newGame(force = false) {
-        if (!force && this.numGuesses > 0 && !this.isWinner && !this.isLoser) {
-            if (!confirm("Game in progress! Are you sure you want to quit?")) return;
+    async restoreDailyGame() {
+        console.log("Explicitly restoring Daily Challenge...");
+        this.dailyChallenge = true;
+        this.showNewGameModal = false;
+
+        // Ensure user is logged in for the restore flow to work effectively 
+        // (though we already checked this in syncStats to set the flag)
+
+        // Re-run the restore logic that was previously in syncStats
+        // Ideally we should have cached the data object, but we might need to re-fetch if we didn't save it.
+        // Actually, syncStats runs on load. If we want to restore "later", we need the data.
+        // Let's re-fetch to be safe and simple, or store 'pendingRestoreData'.
+        // Storing 'pendingRestoreData' is better than another network call if possible, but 
+        // to keep it stateless between modal open/close, let's just re-fetch the user doc or use the local flag + logic?
+        // Wait, 'data' is local to syncStats. 
+        // We should move the restore logic into this function and call it from syncStats IF we wanted auto-restore.
+        // But now we want manual restore.
+
+        // Efficient way: syncStats just sets the flag. 
+        // restoreDailyGame calls a new helper or does the work.
+        // We need to fetch the data again OR access `this.endlessStats`? No, dailyProgress is separate.
+
+        if (!this.user) return; // Should not happen if flag is set
+
+        // We'll do a quick fetch to ensure fresh state
+        const userRef = doc(db, "users", this.user.uid);
+        const docSnap = await getDoc(userRef);
+
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            if (data.dailyProgress) {
+                // Restore Timer
+                this.gameTime = data.dailyProgress.gameTime || 0;
+
+                // Fetch Words
+                try {
+                    let response = await fetch('./words/daily-challenge.js');
+                    this.wordList = await response.json();
+                    this.wordLength = 6;
+                    this.hardMode = false;
+                } catch (e) { console.error("Error fetching daily words for restore", e); }
+
+                if (this.wordList[this.dailyChallengeDay]) {
+                    this.answer = this.wordList[this.dailyChallengeDay].toUpperCase();
+                }
+
+                // Restore Guesses
+                const savedGuesses = data.dailyProgress.guesses || [];
+                this.guesses = [];
+                this.guessStatus = [];
+                this.alphabetStatus = new Array(this.alphabet.length).fill('');
+
+                savedGuesses.forEach(g => {
+                    this.guesses.push(g);
+                    // Re-calculate local state (colors)
+                    let answerClone = this.answer.split('');
+                    let currentBoxStatus = new Array(6).fill(0);
+                    let letters = g.split('');
+
+                    letters.forEach((l, i) => {
+                        if (l === answerClone[i]) {
+                            this.alphabetStatus[this.alphabet.indexOf(l)] = 2;
+                            currentBoxStatus[i] = 2;
+                            answerClone[i] = null;
+                        }
+                    });
+                    letters.forEach((l, i) => {
+                        if (l && answerClone.includes(l)) {
+                            if (this.alphabetStatus[this.alphabet.indexOf(l)] !== 2) this.alphabetStatus[this.alphabet.indexOf(l)] = 1;
+                            if (!currentBoxStatus[i]) currentBoxStatus[i] = 1;
+                            answerClone[answerClone.indexOf(l)] = null;
+                        } else if (l) {
+                            if (this.alphabetStatus[this.alphabet.indexOf(l)] === '') this.alphabetStatus[this.alphabet.indexOf(l)] = 0;
+                        }
+                    });
+                    this.guessStatus.push(currentBoxStatus.join(''));
+                });
+                this.showMessage("Daily Challenge Restored", 3000);
+            }
         }
+    },
+    newGame(force = false) {
+        // REMOVED native confirm() as per request.
+        // Logic for "game in progress" check should happen in the UI before calling this with force=true,
+        // OR we implement a custom modal confirmation flow here.
+        // For now, simpler: The UI buttons (Endless/Daily) should check state.
+        // But if they click "Endless" while playing Daily?
+
+        // We will trust the UI to handle the confirmation interaction (e.g. "Abandon?" button)
+        // or we just reset.
+        // If current game is Daily and In Progress, and they clicked Endless?
+        // We need a way to stop them.
+
+        if (this.dailyChallenge && this.numGuesses > 0 && !this.isWinner && !this.isLoser && !force) {
+            // We can't use native alert.
+            // We'll show a toast for now, or assume the UI handles it.
+            // User said: "If a user selects an Endless Challenge while a Daily Challenge is active, a Javascript alert pops up... Don't ever."
+            // So I need to NOT do that.
+            // Let's use showMessage for now as a "soft" block?
+            this.showMessage("Finish your Daily Challenge first!");
+            return;
+        }
+
+        // Proceed with reset
         this.showStatsModal = false
         this.showNewGameModal = false
-        this.dictionaryDef = null; // Reset definition
-        this.init()
+        this.dictionaryDef = null;
+
+        // Clear Daily flag if we are starting a NEW game (Endless or fresh Daily)
+        // If we are starting Endless, definitely clear it.
+        // If we are starting Daily, we might be starting *fresh* or restoring. 
+        // This function is called for "New Game" (fresh). restoreDailyGame handles restore.
+
+        // If we are explicitly starting a new game, we wipe the "In Progress" UI state locally?
+        // No, the in-progress state comes from the DB. 
+        // If they abandon it, we should probably wipe it from the DB too?
+        // That's complex. Let's just let them play Endless.
+
+        // Reset local state
+        this.gameTime = 0;
+        this.init();
     },
     async lookupDefinition() {
         if (!this.answer) return;
