@@ -1464,6 +1464,36 @@ export default () => ({
             this.confettiWin();
         }, 1000); // Delayed slightly more for visual effect
     },
+    async debugSimulateDailyInProgress() {
+        if (!this.user) {
+            this.showMessage("Please log in to mock cloud save.");
+            return;
+        }
+        console.log("Mocking Daily In Progress...");
+
+        // 1. Save a partial game to Firestore
+        const userRef = doc(db, "users", this.user.uid);
+        await updateDoc(userRef, {
+            dailyProgress: {
+                day: this.dailyChallengeDay,
+                guesses: ["DEBUG", "START"], // Mock 2 guesses
+                gameTime: 123.4,
+                timestamp: new Date().toISOString()
+            }
+        });
+
+        // 2. Clear local stats to simulate a 'fresh' load
+        this.dailyChallenge = false;
+        this.dailyChallengeInProgress = false;
+        this.dailyChallengeComplete = false;
+        this.guesses = [];
+        this.gameTime = 0;
+
+        // 3. Trigger syncStats to "discover" it
+        await this.syncStats();
+
+        this.showMessage("Mocked! Check Daily Challenge UI.", 3000);
+    },
 
     // Background Music Methods
     initMusic() {
