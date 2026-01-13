@@ -1331,25 +1331,22 @@ export default () => ({
         // build full shareBlurb
         // Configurable APP_NAME / URL
         const appName = import.meta.env.VITE_APP_NAME || 'WordLetta';
-        const appUrl = import.meta.env.VITE_APP_URL || 'wordletta.com'; // fallback to partial match if env missing
+        const appUrl = import.meta.env.VITE_APP_URL || '';
 
         // Date format: "Jan 6"
         const dateOptions = { month: 'short', day: 'numeric' };
         const shortDate = new Date().toLocaleDateString('en-US', dateOptions);
 
-        let title = (this.dailyChallenge) ? `Daily Challenge ${shortDate}` : `Random ${this.wordLength}-Letter Game`
+        let titleString = (this.dailyChallenge) ? `Daily Challenge ${shortDate}` : `Endless Challenge`;
 
-        // Random Phrase
-        const phrase = this.sharePhrases[Math.floor(Math.random() * this.sharePhrases.length)];
-
-        let blurb = `${appName} | ${title} | ${phrase}\n`
-            + (this.isWinner ? '✔️' : '❌') + ' ' + this.numGuesses + '/6\n'
+        // "WordLetta Daily Challenge Jan 13 | ✔️ X/6"
+        let blurb = `${appName} ${titleString} | ${(this.isWinner ? '✔️' : '❌')} ${this.numGuesses}/6\n`
             + this.shareBlurb
-            + `\nVisit ${appUrl} to play!`;
+            + `\n${appUrl}`;
 
         if (asImage) {
             try {
-                const blob = await this.generateResultImage(title, this.isWinner ? 'WON' : 'LOST', this.numGuesses + '/6', appUrl);
+                const blob = await this.generateResultImage(titleString, this.isWinner ? 'WON' : 'LOST', this.numGuesses + '/6', appUrl);
                 const file = new File([blob], 'wordletta-result.png', { type: 'image/png' });
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
                     await navigator.share({
@@ -1379,7 +1376,9 @@ export default () => ({
         if (navigator.share && !asImage) {  // https://stackoverflow.com/a/55218902/5701
             navigator.share({
                 title: appName,
-                text: phrase,
+                text: blurb,
+                // url: appUrl, // Url is already in blurb, adding it here might duplicate on some platforms? 
+                // But generally safe to include as structured data.
                 url: appUrl,
             }).then(() => {
                 // console.log('Shared successfully.')
@@ -1388,7 +1387,7 @@ export default () => ({
             });
         }
     },
-    generateResultImage(title, status, score, url = 'wordletta.com') {
+    generateResultImage(title, status, score, url = '') {
         return new Promise((resolve) => {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
