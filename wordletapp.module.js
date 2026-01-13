@@ -1332,6 +1332,7 @@ export default () => ({
         // Configurable APP_NAME / URL
         const appName = import.meta.env.VITE_APP_NAME || 'WordLetta';
         const appUrl = import.meta.env.VITE_APP_URL || '';
+        console.log("Share URL:", appUrl);
 
         // Date format: "Jan 6"
         const dateOptions = { month: 'short', day: 'numeric' };
