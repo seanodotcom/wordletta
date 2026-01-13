@@ -26,7 +26,7 @@ const LAYER_DEFS = {
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '1.9.3',
+    version: '2.0.0',
     user: null,
     wordLength: 6,
     totalGuesses: 6,
@@ -41,6 +41,31 @@ export default () => ({
     pausedByModal: false,
     showPauseMenu: false, // UI Overlay state
     wasPauseMenuOpen: false, // State memory
+
+    // Hints State
+    hintsUsed: 0,
+    maxHints: 3,
+    showHintsModal: false,
+    hintActiveIndex: -1, // For animating specific boxes
+
+    // Animation States
+    showBombAnimation: false,
+    bombFloatingKeys: [], // {char, x, y, w, h}
+    bombStage: 0, // 0: init, 1: fly, 2: explode
+    bombStage: 0, // 0: init, 1: fly, 2: explode
+    highlightKey: '', // char to pulse highlight
+
+    // Green Light Overlay State
+    showGreenLightAnimation: false,
+    greenLightFloatingKey: { char: '', x: 0, y: 0, w: 0, h: 0, fontSize: '1rem' },
+    greenLightStage: 0, // 0: init (yellow), 1: hold, 2: move & green
+
+    // Buy Vowel Overlay State
+    showVowelAnimation: false,
+    vowelFloatingKey: { char: '', x: 0, y: 0, w: 0, h: 0, fontSize: '1rem', colorClass: 'bg-slate-200 text-slate-700' },
+    vowelStage: 0, // 0: Center Gray, 1: Center Yellow, 2: Move to Keyboard
+
+    // PWA State
 
     // PWA State
     installPrompt: null,
@@ -104,6 +129,7 @@ export default () => ({
         });
         this.$watch('showReleaseNotesModal', modalWatcher);
         this.$watch('showStatsModal', modalWatcher);
+        this.$watch('showHintsModal', modalWatcher);
         this.$watch('showNewGameModal', (value) => {
             this.checkModalPauseState();
             setTimeout(() => { this.updateMusicState(); }, 100);
@@ -188,6 +214,30 @@ export default () => ({
         "Unstoppable!",
         "Sharp!",
         "Brilliant!"
+    ],
+    releaseNotes: [
+        {
+            version: '2.0.0',
+            date: 'Jan 13, 2026',
+            title: 'Hints & Hype Update! 💡✨',
+            features: [
+                'NEW: Hints System Overhaul! Used a hint? Get ready for a show.',
+                'Green Light!: New animation slides letters into place.',
+                'Buy a Vowel: Watch vowels fly from the ether to your keyboard.',
+                'Letta Bomb: Unneeded letters explode with more pizazz.',
+                'Visuals: "Ghost" styling for ruled-out letters in the active row.',
+                'Start Fresh: Smoother animations and cleaner UI throughout.',
+                'Fixed: Various bugs squashed for a buttery smooth experience.'
+            ]
+        },
+        {
+            version: '1.9.3',
+            date: 'Jan 12, 2026',
+            title: 'Weekly View Update',
+            features: [
+                'Refined key UI interactions'
+            ]
+        }
     ],
     endlessStats: [], // Removed Alpine.$persist to rely on Firestore/Local merge logic manually if needed, or keeping it for offline support? 
     // actually keeping it simple: use local unless logged in.
@@ -287,6 +337,27 @@ export default () => ({
         if (s >= 7) return 2;  // "Warmer"
         if (s >= 2) return 1;  // "Warm"
         return 0;
+    },
+    get hasYellowLetters() {
+        // Check if any letter in alphabetStatus is 1 (Yellow)
+        // OR check boxStatus of current row? 
+        // Actually, we want to know if the USER has found any yellow letters in previous guesses.
+        return this.alphabetStatus.some(s => s == 1);
+    },
+    get allVowelsFound() {
+        const vowels = ['A', 'E', 'I', 'O', 'U'];
+        // check if all vowels THAT ARE IN THE ANSWER have been found (status 1 or 2).
+        // If a vowel is NOT in the answer, we don't care if it's found or not for this check? 
+        // "If the user has guessed all vowels in the hidden word"
+        if (!this.answer) return false;
+        const answerVowels = vowels.filter(v => this.answer.includes(v));
+        if (answerVowels.length === 0) return true; // No vowels in word (rare)
+
+        // specific check: are all answerVowels either green (2) or yellow (1) in alphabetStatus?
+        return answerVowels.every(v => {
+            const idx = this.alphabet.indexOf(v);
+            return this.alphabetStatus[idx] == 1 || this.alphabetStatus[idx] == 2;
+        });
     },
     async fetchWordList(num, level = '') {
         if (!num) return false
@@ -410,6 +481,7 @@ export default () => ({
         this.cursor = 0
         this.isWinner = false
         this.isLoser = false
+        this.hintsUsed = 0; // Reset hint usage
         this.stopTimer();
         this.timerStarted = false;
         this.gameTime = 0;
@@ -610,6 +682,372 @@ export default () => ({
             this.dictionaryDef = { definition: "Could not fetch definition." };
         }
     },
+
+    isLetterRuledOut(char) {
+        if (!char) return false;
+        // Ensure char is uppercase just in case
+        const c = char.toUpperCase();
+        const idx = this.alphabet.indexOf(c);
+        // Status 0 (number) or '0' (string) means ruled out.
+        // Empty string '' means unused.
+        return idx !== -1 && (this.alphabetStatus[idx] === 0 || this.alphabetStatus[idx] === '0');
+    },
+
+    // --- HINTS LOGIC ---
+    async hintLettaBomb() {
+        if (this.hintsUsed >= this.maxHints) return;
+
+        const candidateLetters = this.alphabet.filter((char, index) => {
+            return !this.answer.includes(char) && this.alphabetStatus[index] === '';
+        });
+
+        if (candidateLetters.length === 0) {
+            this.showMessage("No letters to bomb!");
+            return;
+        }
+
+        // Pick 3 random
+        const bombCount = Math.min(3, candidateLetters.length);
+        const toBomb = [];
+        for (let i = 0; i < bombCount; i++) {
+            const r = Math.floor(Math.random() * candidateLetters.length);
+            toBomb.push(candidateLetters[r]);
+            candidateLetters.splice(r, 1);
+        }
+
+        this.showHintsModal = false;
+        this.hintsUsed++;
+
+        // 1. Capture positions
+        this.bombFloatingKeys = [];
+        this.bombStage = 0;
+        this.showBombAnimation = true;
+
+        // Wait for DOM to update and modal to close?
+        await new Promise(r => setTimeout(r, 100));
+
+        // Find elements
+        // This is tricky in Alpine. We need refs or querySelector.
+        // We'll use text content matching since we don't have unique IDs per key easily available.
+        // Or we iterate keyboardRows in DOM.
+        // Let's try querySelector with text.
+        const keyEls = Array.from(document.querySelectorAll('.noselect'));
+
+        toBomb.forEach(char => {
+            const el = keyEls.find(e => e.innerText.trim() === char);
+            if (el) {
+                const rect = el.getBoundingClientRect();
+                this.bombFloatingKeys.push({
+                    char: char,
+                    x: rect.left,
+                    y: rect.top,
+                    w: rect.width,
+                    h: rect.height,
+                    exploded: false
+                });
+            }
+        });
+
+        // 2. Trigger Fly to Center
+        // We need a slight delay to allow rendering at initial position
+        setTimeout(() => {
+            this.bombStage = 1; // Class 'animate-fly-center' applies (transition)
+
+            // Centered Layout Config
+            const cx = window.innerWidth / 2;
+            const cy = window.innerHeight / 2;
+            const gap = 20; // px gap between tiles
+            // Assume visual width scale is ~2. 
+            // We want them side-by-side: [ 1 ] [ 2 ] [ 3 ]
+            // Spacing = (BaseWidth * Scale) + Gap.
+            // We can estimate base width from the first item or average.
+            const baseW = this.bombFloatingKeys[0]?.w || 40;
+            const spacing = (baseW * 2) + gap;
+
+            // Calculate starting offset to center the group
+            // For 3 items: -spacing, 0, +spacing
+            // For N items: idx - (total-1)/2
+
+            this.bombFloatingKeys.forEach((k, idx) => {
+                const offsetFactor = idx - ((this.bombFloatingKeys.length - 1) / 2);
+                k.x = cx + (offsetFactor * spacing) - (k.w / 2);
+                k.y = cy - (k.h / 2);
+            });
+
+            this.playSound('click'); // Woosh sound?
+
+        }, 50);
+
+        // 3. Explode
+        // Wait 1s for fly + 1s hold = 2s delay
+        // 3. Explode Sequence
+        // Fly = 1s, Hold = 800ms -> Start at 1850ms
+        setTimeout(() => {
+            // Staggered explosion
+            this.bombFloatingKeys.forEach((item, index) => {
+                setTimeout(() => {
+                    item.exploded = true;
+                    this.playSound('explosion');
+
+                    // Turn key gray immediately
+                    const idx = this.alphabet.indexOf(item.char);
+                    if (idx !== -1) {
+                        this.alphabetStatus[idx] = 0;
+                    }
+                }, index * 150); // 150ms stagger
+            });
+
+            // Cleanup
+            // Wait for all explosions (e.g. 3 items = 300ms start + 500ms anim) + buffer
+            const totalDuration = (this.bombFloatingKeys.length * 150) + 1000;
+            setTimeout(() => {
+                this.showBombAnimation = false;
+                this.bombStage = 0;
+                this.bombFloatingKeys = [];
+                this.showMessage(`💣 BOOM! Removed ${toBomb.join(', ')}`);
+            }, totalDuration);
+
+        }, 1850);
+
+
+    },
+
+    async hintGreenLight() {
+        if (this.hintsUsed >= this.maxHints) return;
+
+        // Find candidates from previous guesses that were marked Yellow (1)
+        // We look at `guessStatus` history.
+        // Flatten all yellow instances? Or just look at most recent?
+        // Let's gather ALL letters that were marked '1' in any previous guess
+        // AND are technically not "solved" (well, Green Light moves them, so solved is irrelevant).
+        // Actually, simpler: Just find ANY letter that appeared as Yellow in history.
+        // Even better: Prioritize yellows from the *latest* guess.
+
+        let candidates = [];
+        // Iterate backwards through guesses to find the most recent yellows
+        for (let i = this.guesses.length - 1; i >= 0; i--) {
+            const rowWord = this.guesses[i];
+            const rowStatus = this.guessStatus[i]; // String e.g. "01202"
+
+            // Find indices where status is 1 (Yellow)
+            const yellowIndices = rowStatus.split('').map((s, idx) => s == '1' ? idx : -1).filter(idx => idx !== -1);
+
+            if (yellowIndices.length > 0) {
+                // Convert indices to chars
+                const rowCandidates = yellowIndices.map(idx => rowWord[idx]);
+                candidates = [...new Set(rowCandidates)]; // Unique chars
+                break; // Stop at the most recent row with yellows? Yes, best context.
+            }
+        }
+
+        // Fallback: If no yellows in latest relevant row, try alphabetStatus?
+        // Or if the user really has NO yellows ever?
+        if (candidates.length === 0) {
+            // Try global status as fallback
+            candidates = this.alphabet.filter((l, i) => this.alphabetStatus[i] == 1);
+        }
+
+        if (candidates.length === 0) {
+            this.showMessage("No yellow letters to fix!");
+            return;
+        }
+
+        const targetChar = candidates[Math.floor(Math.random() * candidates.length)];
+        const correctIndices = [];
+        this.answer.split('').forEach((l, i) => { if (l === targetChar) correctIndices.push(i); });
+
+        // Pick target index where this char belongs
+        // Prefer one that isn't currently filled with the correct char?
+        // (i.e. if user already has R correct in col 3, and we are fixing a yellow R, find another slot)
+        let targetIndex = correctIndices.find(i => this.letters[i] !== targetChar);
+
+
+        if (targetIndex === undefined) {
+            // If all instances are already in correct spot in current guess?
+            // Then maybe pick another candidate?
+            // If impossible, just pick first one and animate it "staying put"?
+            targetIndex = correctIndices[0];
+        }
+
+        if (targetIndex === undefined) { targetIndex = correctIndices[0]; }
+
+        this.hintsUsed++;
+        this.showHintsModal = false;
+
+        // 1. Calculate Positions
+        // Source: "Last known position" from recent history.
+        // We find the most recent guess row that had this char on a YELLOW spot (1).
+        // Actually, just find the char in the most recent row it appeared.
+        let sourceCol = -1;
+        // Search backwards [guesses.length-1 ... 0]
+        // But wait, user said "appear in the active guess row, its last-known position".
+        // This implies visual column index.
+        const reversedHistory = this.guesses.slice().reverse();
+        for (let g of reversedHistory) {
+            if (g.includes(targetChar)) {
+                sourceCol = g.indexOf(targetChar); // First occurrence
+                break;
+            }
+        }
+        if (sourceCol === -1) sourceCol = targetIndex; // Fallback
+
+        // Find DOM Elements for Active Row
+        // Selector: .row.guess .letter input
+        // Since there is only one ".row.guess" (the input row), we can find it easily.
+        await new Promise(r => setTimeout(r, 100)); // wait for modal close
+        const inputBoxes = document.querySelectorAll('.row.guess .letter');
+
+        if (!inputBoxes[sourceCol] || !inputBoxes[targetIndex]) return;
+
+        const sourceRect = inputBoxes[sourceCol].getBoundingClientRect();
+        const targetRect = inputBoxes[targetIndex].getBoundingClientRect();
+        const computedStyle = window.getComputedStyle(inputBoxes[sourceCol].querySelector('input')); // Get font size
+
+        // 2. Setup Animation Overlay
+        this.greenLightFloatingKey = {
+            char: targetChar,
+            x: sourceRect.left,
+            y: sourceRect.top,
+            w: sourceRect.width,
+            h: sourceRect.height,
+            fontSize: computedStyle.fontSize
+        };
+        this.greenLightStage = 1; // Yellow, Start Pos
+        this.showGreenLightAnimation = true;
+
+        // 3. Sequence
+        // Hold 800ms
+        setTimeout(() => {
+            this.greenLightStage = 2; // Trigger transition (Move + Turn Green)
+
+            // Update Position to Target
+            this.greenLightFloatingKey.x = targetRect.left;
+            this.greenLightFloatingKey.y = targetRect.top;
+
+        }, 800);
+
+        // Finish after Transition (800ms + 1000ms transition = 1800ms)
+        setTimeout(() => {
+            // Commit to Board state
+
+            // Remove from elsewhere in active row if present (Swap)
+            const existingIndex = this.letters.findIndex((l, i) => l === targetChar && i !== targetIndex);
+            if (existingIndex !== -1) {
+                this.letters[existingIndex] = '';
+                this.boxStatus[existingIndex] = '';
+            }
+
+            this.letters[targetIndex] = targetChar;
+            this.boxStatus[targetIndex] = 2; // Green
+            this.alphabetStatus[this.alphabet.indexOf(targetChar)] = 2;
+
+            this.playSound('magic'); // 🪄✨
+
+            // Cleanup Overlay
+            // Small delay to prevent flicker?
+            this.showGreenLightAnimation = false;
+        }, 1800);
+
+        // Move cursor if it was on the filled spot?
+        // Logic should handle skipping.
+    },
+
+    async hintBuyVowel() {
+        if (this.hintsUsed >= this.maxHints) return;
+
+        const vowels = ['A', 'E', 'I', 'O', 'U'];
+        const answerVowels = vowels.filter(v => this.answer.includes(v));
+        const unrevealedVowels = answerVowels.filter(v => {
+            const idx = this.alphabet.indexOf(v);
+            return this.alphabetStatus[idx] === '';
+        });
+
+        let targetVowel;
+        if (unrevealedVowels.length > 0) {
+            targetVowel = unrevealedVowels[Math.floor(Math.random() * unrevealedVowels.length)];
+        } else {
+            this.showMessage("All vowels have been found!");
+            return;
+        }
+
+        this.hintsUsed++;
+        this.showHintsModal = false;
+        this.showHintsModal = false;
+
+        // 1. Prepare Animation
+        await new Promise(r => setTimeout(r, 100));
+
+        // Find DOM element for target key
+        const keyEls = Array.from(document.querySelectorAll('.noselect'));
+        const targetKeyEl = keyEls.find(e => e.innerText.trim() === targetVowel);
+
+        if (!targetKeyEl) {
+            // Fallback if not found
+            this.alphabetStatus[this.alphabet.indexOf(targetVowel)] = 1;
+            return;
+        }
+
+        // Center Coordinates
+        // Use same size as Letta Bomb (~3x normal?)
+        // Let's pick a nice large fixed size for center, e.g. 100x100
+        const cw = 80;
+        const ch = 80;
+        const cx = (window.innerWidth / 2) - (cw / 2);
+        const cy = (window.innerHeight / 2) - (ch / 2);
+
+        this.vowelFloatingKey = {
+            char: targetVowel,
+            x: cx,
+            y: cy,
+            w: cw,
+            h: ch,
+            fontSize: '2.5rem',
+            opacity: 0 // Start hidden
+        };
+        this.vowelStage = 0;
+        this.showVowelAnimation = true;
+
+        // 2. Play Sequence
+
+        // T+50ms: Fade In Gray (duration 0.5s default transition?)
+        // User wants "display for 1s". So let's fade in quickly then hold.
+        setTimeout(() => {
+            this.vowelFloatingKey.opacity = 1;
+        }, 50);
+
+        // T+1000ms: Transition Gray -> Yellow (over 1s)
+        setTimeout(() => {
+            this.vowelStage = 1;
+        }, 1000);
+
+        // T+2000ms: Move to Keyboard (over 1s)
+        setTimeout(() => {
+            const rect = targetKeyEl.getBoundingClientRect();
+            this.vowelStage = 2;
+
+            this.vowelFloatingKey.x = rect.left;
+            this.vowelFloatingKey.y = rect.top;
+            this.vowelFloatingKey.w = rect.width;
+            this.vowelFloatingKey.h = rect.height;
+            this.vowelFloatingKey.fontSize = '1.25rem';
+
+        }, 2000);
+
+        // Finish (2000ms + 1000ms move = 3000ms)
+        setTimeout(() => {
+            // Commit state
+            this.showVowelAnimation = false;
+            this.alphabetStatus[this.alphabet.indexOf(targetVowel)] = 1; // Yellow
+            this.playSound('magic');
+            this.highlightKey = targetVowel; // Pulse
+            setTimeout(() => { this.highlightKey = ''; }, 3000);
+
+            this.showMessage(`Found vowel: ${targetVowel}!`);
+
+        }, 3000);
+
+
+    },
     evaluateGuess() {
         // reset
         this.boxStatus = []
@@ -722,7 +1160,7 @@ export default () => ({
 
             }, 900); // Wait for fade animation (match CSS duration)
 
-        }, 1000); // 1s delay before moving
+        }, 400); // 400ms delay before moving
 
     },
     howManyInAnswer(l) {
@@ -742,20 +1180,40 @@ export default () => ({
         this.startTimer();
 
 
-        // cursor at beginning? clear all other letters & box statuses (colors)
+        // cursor at beginning? clear all other NON-HINT letters
+        // Note: boxStatus[i] === 2 implies a Hint in the active row.
         if (this.cursor == 0) {
             for (let i = 0; i < this.wordLength; i++) {
-                this.letters[i] = ''
+                if (this.boxStatus[i] !== 2) {
+                    this.letters[i] = '';
+                    this.boxStatus[i] = '';
+                }
             }
-            this.boxStatus = []
+            // Do NOT wipe boxStatus completely if it has hints
         }
+
+        // Advance cursor if currently on a hint
+        while (this.cursor < this.wordLength && this.boxStatus[this.cursor] === 2) {
+            this.cursor++;
+        }
+
+        if (this.cursor > this.wordLength - 1) return;
 
         // add letter to letters[] array
         this.letters[this.cursor] = l
         this.playSound('click');
 
-        // advance cursor
+        // advance cursor (skip filled/Green slots from hints)
+        // Check next slot. If it's already filled by a hint (status 2?), skip it.
+        // Actually, hintGreenLight sets boxStatus to 2.
+        // But what if user just typed a letter? boxStatus is usually undefined/empty until evaluation.
+        // So checking boxStatus[this.cursor + 1] === 2 is a good sign it's a hint.
+
         this.cursor++
+        // Skip over any pre-filled hint letters
+        while (this.cursor < this.wordLength && this.boxStatus[this.cursor] === 2) {
+            this.cursor++;
+        }
     },
     enter() {
         // Must be full word
@@ -797,14 +1255,34 @@ export default () => ({
         // if game is over, do nothing
         if (this.isWinner || this.isLoser) return
 
-        // erase letter & decrement cursor
-        this.letters[this.cursor - 1] = ''
-        this.cursor--
-        if (this.cursor < 0) this.cursor = 0
-        this.playSound('backspace');
+        // If current cursor is > 0, we want to delete char at cursor-1.
+        // BUT if char at cursor-1 is a Hint (Green/status 2), we should SKIP it and delete the one before?
+        // Or just block deletion? Usually block deletion of hints.
+        // Scan backwards from cursor until we find a non-hint.
 
-        // if erasing a letter, guess is no longer ready to check
-        this.isReadyToCheck = false
+        let targetCursor = this.cursor; // Start at current.
+
+        // If we are at end (wordLength), or just empty slot.
+        // We want to move back 1.
+        // If that slot is hint, keep moving back.
+
+        if (targetCursor === 0) return;
+
+        // Move back at least once
+        targetCursor--;
+
+        // Check if this slot is a hint (boxStatus == 2)
+        while (targetCursor >= 0 && this.boxStatus[targetCursor] === 2) {
+            targetCursor--;
+        }
+
+        if (targetCursor < 0) return; // All previous are hints
+
+        // Set cursor to this new spot
+        this.cursor = targetCursor;
+        this.letters[this.cursor] = ''; // erase
+        this.playSound('backspace');
+        this.isReadyToCheck = false;
     },
     gameWon() {
         this.stopTimer();
@@ -1402,6 +1880,67 @@ export default () => ({
             osc.stop(now + 0.15);
             // Double beep?
             // Actually, a single low "donk" is fine.
+        } else if (type === 'explosion') {
+            // Real Boom: Noise + Sub
+            const bufferSize = this.audioCtx.sampleRate * 0.5; // 0.5s
+            const buffer = this.audioCtx.createBuffer(1, bufferSize, this.audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+
+            const noise = this.audioCtx.createBufferSource();
+            noise.buffer = buffer;
+
+            // Filter noise for 'rumble'
+            const noiseFilter = this.audioCtx.createBiquadFilter();
+            noiseFilter.type = 'lowpass';
+            noiseFilter.frequency.setValueAtTime(800, now);
+            noiseFilter.frequency.exponentialRampToValueAtTime(50, now + 0.4);
+
+            const noiseGain = this.audioCtx.createGain();
+            noiseGain.gain.setValueAtTime(0.8, now);
+            noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+            noise.connect(noiseFilter);
+            noiseFilter.connect(noiseGain);
+            noiseGain.connect(this.audioCtx.destination);
+            noise.start(now);
+
+            // Sub-bass thud
+            const subOsc = this.audioCtx.createOscillator();
+            subOsc.type = 'triangle';
+            subOsc.frequency.setValueAtTime(80, now);
+            subOsc.frequency.exponentialRampToValueAtTime(20, now + 0.5);
+
+            const subGain = this.audioCtx.createGain();
+            subGain.gain.setValueAtTime(0.8, now);
+            subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+
+            subOsc.connect(subGain);
+            subGain.connect(this.audioCtx.destination);
+            subOsc.start(now);
+            subOsc.stop(now + 0.5);
+        } else if (type === 'magic') {
+            // Upward chimes / glisten
+            const now = this.audioCtx.currentTime;
+            for (let i = 0; i < 5; i++) {
+                const osc = this.audioCtx.createOscillator();
+                const gain = this.audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(this.audioCtx.destination);
+                osc.type = 'sine';
+
+                // Arpeggio: C5, E5, G5, C6, E6
+                const freqs = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+                osc.frequency.setValueAtTime(freqs[i], now + (i * 0.08));
+
+                gain.gain.setValueAtTime(0.05, now + (i * 0.08));
+                gain.gain.exponentialRampToValueAtTime(0.001, now + (i * 0.08) + 0.4);
+
+                osc.start(now + (i * 0.08));
+                osc.stop(now + (i * 0.08) + 0.4);
+            }
         }
 
         // Haptic Feedback Trigger (Sync with sound)
