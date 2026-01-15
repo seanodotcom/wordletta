@@ -628,6 +628,23 @@ export default () => ({
             this.newGame(true);
         }
     },
+    viewDailyBoard() {
+        const todayIndex = this.dailyChallengeDay;
+        const dailyData = this.dailyStats[todayIndex];
+        if (dailyData) {
+            this.guesses = dailyData.guesses;
+            this.answer = dailyData.answer;
+            this.dailyChallenge = true;
+            this.isWinner = dailyData.isWinner || true;
+            this.gameTime = dailyData.duration || 0;
+            // Force keyboard status update if needed, though watcher might handle it on guess change
+            // But guesses are replaced, so we might need to trigger alphabet update manually?
+            // Actually, letters/boxStatus might need update?
+            // Let's rely on 'guesses' watcher if it exists, or call updateBoxStatus?
+            // For now, minimal implementation which sets the state variables.
+        }
+        this.showNewGameModal = false;
+    },
     newGame(force = false) {
         // REMOVED native confirm() as per request.
         // Logic for "game in progress" check should happen in the UI before calling this with force=true,

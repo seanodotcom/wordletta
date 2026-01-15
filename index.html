@@ -510,13 +510,16 @@
                     <img :src="user.photoURL" class="w-8 h-8 rounded-full border border-slate-200 shadow-sm">
                     <span class="text-sm font-semibold text-slate-700" x-text="user.displayName"></span>
                   </div>
-                  <div class="flex flex-col items-end">
+                  <div class="flex items-center gap-6">
                     <button @click="showStatsModal = true; showNewGameModal = false"
-                      class="text-xs font-bold text-indigo-500 hover:text-indigo-700 transition-colors mb-1 flex items-center gap-1">
-                      <span>View Stats</span>
+                      class="text-sm font-bold text-indigo-500 hover:text-indigo-700 transition-colors flex items-center gap-2 group"
+                      title="View Stats">
+                      <img src="/icons/stats.svg" class="w-5 h-5 opacity-80 group-hover:opacity-100 text-indigo-500">
+                      <span>Stats</span>
                     </button>
+                    <div class="h-4 w-px bg-slate-200"></div>
                     <button @click="logout"
-                      class="text-xs font-medium text-slate-400 hover:text-red-500 transition-colors">Logout</button>
+                      class="text-sm font-medium text-slate-400 hover:text-rose-500 transition-colors">Logout</button>
                   </div>
                 </div>
               </template>
@@ -550,7 +553,7 @@
                   <div class="flex flex-col items-center gap-1">
                     <span class="text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full">Challenge
                       Complete. See you tomorrow!</span>
-                    <button @click="showNewGameModal = false"
+                    <button @click="viewDailyBoard()"
                       class="text-xs text-indigo-500 hover:text-indigo-700 underline mt-1">View Board</button>
                   </div>
                 </template>
