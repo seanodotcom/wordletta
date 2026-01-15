@@ -213,8 +213,10 @@
 
           <!-- Hints Icon -->
           <div class="relative">
-            <button @click="(hintsUsed >= maxHints) ? showMessage('No hints remaining!') : showHintsModal = true"
-              class="text-slate-400 dark:text-slate-500 hover:text-indigo-500 transition-colors p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full"
+            <button
+              @click="(isWinner || isLoser) ? null : ((hintsUsed >= maxHints) ? showMessage('No hints remaining!') : showHintsModal = true)"
+              :disabled="isWinner || isLoser"
+              class="text-slate-400 dark:text-slate-500 hover:text-indigo-500 transition-colors p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
               title="Need a Hint?">
               <!-- Regular Bulb (Available) -->
               <img x-show="hintsUsed < maxHints" src="/icons/light-bulb.svg"
@@ -380,7 +382,7 @@
                 :class="{
                     'bg-amber-400 border-amber-500': boxStatus[i] == 1,
                     'bg-emerald-500 border-emerald-600 text-white': boxStatus[i] == 2,
-                    'text-slate-400 dark:text-slate-500 opacity-50': (boxStatus[i] === undefined || boxStatus[i] === '') && isLetterRuledOut(letters[i]),
+                    'text-slate-400 dark:text-slate-500 opacity-25': (boxStatus[i] === undefined || boxStatus[i] === '') && isLetterRuledOut(letters[i]),
                     'translate-y-12 opacity-0': isClearing
                   }" type="text" disabled="disabled" />
 
@@ -508,8 +510,14 @@
                     <img :src="user.photoURL" class="w-8 h-8 rounded-full border border-slate-200 shadow-sm">
                     <span class="text-sm font-semibold text-slate-700" x-text="user.displayName"></span>
                   </div>
-                  <button @click="logout"
-                    class="text-xs font-medium text-slate-400 hover:text-red-500 transition-colors">Logout</button>
+                  <div class="flex flex-col items-end">
+                    <button @click="showStatsModal = true; showNewGameModal = false"
+                      class="text-xs font-bold text-indigo-500 hover:text-indigo-700 transition-colors mb-1 flex items-center gap-1">
+                      <span>View Stats</span>
+                    </button>
+                    <button @click="logout"
+                      class="text-xs font-medium text-slate-400 hover:text-red-500 transition-colors">Logout</button>
+                  </div>
                 </div>
               </template>
             </div>
@@ -538,9 +546,14 @@
                       x-text="dailyChallengeInProgress ? 'Finish Today\'s Challenge' : 'Play Today\'s Challenge!'"></span>
                   </button>
                 </template>
-                <template x-if="dailyChallengeComplete"><span
-                    class="text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full">Challenge Complete.
-                    See you tomorrow!</span></template>
+                <template x-if="dailyChallengeComplete">
+                  <div class="flex flex-col items-center gap-1">
+                    <span class="text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full">Challenge
+                      Complete. See you tomorrow!</span>
+                    <button @click="showNewGameModal = false"
+                      class="text-xs text-indigo-500 hover:text-indigo-700 underline mt-1">View Board</button>
+                  </div>
+                </template>
               </div>
 
               <!-- # of letters -->
@@ -649,7 +662,7 @@
               'border-amber-400 shadow-[0_0_25px_rgba(251,191,36,0.6)]': isWinner && fireLevel == 1,
               'border-orange-500 shadow-[0_0_35px_rgba(249,115,22,0.8)]': isWinner && fireLevel == 2,
               'border-rose-600 shadow-[0_0_50px_rgba(225,29,72,0.9)] scale-105': isWinner && fireLevel == 3,
-              'border-slate-300': !isWinner 
+              'border-slate-300': !isWinner
             }" @click.away="showShareModal = false">
             <!-- Title / Close-->
             <div class="flex items-start justify-between absolute right-4 top-4">
@@ -667,20 +680,29 @@
 
                     <!-- Final Word & Time -->
                     <div
-                      class="flex flex-col gap-1 items-center justify-center mt-2 p-3 bg-slate-50 rounded-lg border border-slate-100">
-                      <div class="text-xs uppercase tracking-widest text-slate-400 font-bold">The Word</div>
+                      class="flex flex-col gap-1 items-center justify-center mt-2 p-4 bg-slate-50 rounded-lg border border-slate-100">
 
-                      <div class="flex items-center gap-3 mb-1">
-                        <!-- Define Icon Button -->
-                        <button x-show="!dictionaryDef" @click="lookupDefinition()" title="Define this word"
-                          class="text-sky-400 hover:text-indigo-500 hover:bg-slate-200 p-1.5 rounded-full transition-colors">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                          </svg>
-                        </button>
-                        <div class="text-2xl font-black text-slate-800 tracking-wider" x-text="answer"></div>
+                      <div class="flex flex-col items-center justify-center gap-2 mb-2">
+                        <!-- Word -->
+                        <div class="text-3xl sm:text-4xl font-black text-slate-800 tracking-wider break-all mx-2 mb-2"
+                          x-text="answer"></div>
+
+                        <!-- Buttons Row -->
+                        <div class="flex items-center justify-center gap-3">
+                          <!-- Define Button -->
+                          <button @click="lookupDefinition()" title="Define this word"
+                            class="flex items-center gap-2 bg-slate-200 hover:bg-slate-300 text-indigo-700 hover:text-indigo-900 shadow-sm px-4 py-2 rounded-full transition-colors font-bold text-sm">
+                            <img src="/icons/book.svg" class="w-5 h-5 opacity-75">
+                            <span>Define</span>
+                          </button>
+
+                          <!-- Pronounce Button -->
+                          <button @click="speakWord()" title="Pronounce this word"
+                            class="flex items-center gap-2 bg-slate-200 hover:bg-slate-300 text-indigo-700 hover:text-indigo-900 shadow-sm px-4 py-2 rounded-full transition-colors font-bold text-sm">
+                            <img src="/icons/talk.svg" class="w-5 h-5 opacity-75">
+                            <span>Pronounce</span>
+                          </button>
+                        </div>
                       </div>
 
                       <div class="text-xs text-slate-500 flex items-center gap-1">
@@ -694,22 +716,30 @@
                   <div class="mb-4">
                     <h2 class="text-3xl font-bold text-slate-400 mb-2">Game Over</h2>
                     <!-- Final Word & Time -->
-                    <!-- Final Word & Time -->
                     <div
-                      class="flex flex-col gap-1 items-center justify-center mt-2 p-3 bg-slate-50 rounded-lg border border-slate-100">
-                      <div class="text-xs uppercase tracking-widest text-slate-400 font-bold">The Word Was</div>
+                      class="flex flex-col gap-1 items-center justify-center mt-2 p-4 bg-slate-50 rounded-lg border border-slate-100">
 
-                      <div class="flex items-center gap-3 mb-1">
-                        <!-- Define Icon Button -->
-                        <button x-show="!dictionaryDef" @click="lookupDefinition()" title="Define this word"
-                          class="text-sky-400 hover:text-indigo-500 hover:bg-slate-200 p-1.5 rounded-full transition-colors">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                          </svg>
-                        </button>
-                        <div class="text-2xl font-black text-slate-800 tracking-wider" x-text="answer"></div>
+                      <div class="flex flex-col items-center justify-center gap-2 mb-2">
+                        <!-- Word -->
+                        <div class="text-3xl sm:text-4xl font-black text-slate-800 tracking-wider break-all mx-2 mb-2"
+                          x-text="answer"></div>
+
+                        <!-- Buttons Row -->
+                        <div class="flex items-center justify-center gap-3">
+                          <!-- Define Button -->
+                          <button @click="lookupDefinition()" title="Define this word"
+                            class="flex items-center gap-2 bg-slate-200 hover:bg-slate-300 text-indigo-700 hover:text-indigo-900 shadow-sm px-4 py-2 rounded-full transition-colors font-bold text-sm">
+                            <img src="/icons/book.svg" class="w-5 h-5 opacity-75">
+                            <span>Define</span>
+                          </button>
+
+                          <!-- Pronounce Button -->
+                          <button @click="speakWord()" title="Pronounce this word"
+                            class="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-indigo-600 px-4 py-2 rounded-full transition-colors font-medium text-sm">
+                            <img src="/icons/talk.svg" class="w-5 h-5 opacity-75">
+                            <span>Pronounce</span>
+                          </button>
+                        </div>
                       </div>
 
                       <div class="text-xs text-slate-500 flex items-center gap-1">
@@ -725,34 +755,36 @@
 
                 <!-- Dictionary Definition -->
                 <div class="grid transition-[grid-template-rows] duration-1000 ease-out mb-6 text-left"
-                   :class="dictionaryDef ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'">
+                  :class="dictionaryDef ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'">
                   <div class="overflow-hidden">
-                    <div class="bg-indigo-50/50 p-4 rounded-lg border border-indigo-100 transition-opacity duration-1000"
-                       :class="dictionaryDef ? 'opacity-100' : 'opacity-0'">
-                      <div class="font-bold text-slate-800 capitalize mb-1 flex flex-wrap items-baseline gap-2">
-                        <span x-text="dictionaryDef && dictionaryDef.word"></span>
-                        <template x-if="dictionaryDef && dictionaryDef.phonetic">
-                            <span class="text-xs text-slate-400 font-mono font-normal" x-text="dictionaryDef.phonetic"></span>
-                        </template>
-                        <span class="text-xs font-normal text-slate-500 italic"
-                          x-text="dictionaryDef && dictionaryDef.partOfSpeech"></span>
+                    <div
+                      class="bg-indigo-50/50 p-4 rounded-lg border border-indigo-100 transition-opacity duration-1000"
+                      :class="dictionaryDef ? 'opacity-100' : 'opacity-0'">
+                      <div class="flex flex-wrap items-baseline gap-2 mb-1">
+                        <span class="font-bold text-slate-800 capitalize text-lg"
+                          x-text="dictionaryDef && dictionaryDef.word"></span>
+                        <span x-text="dictionaryDef && dictionaryDef.phonetic"
+                          class="text-slate-500 text-sm font-mono"></span>
                       </div>
-                      <div class="text-sm text-slate-600 leading-relaxed"
-                        x-text="dictionaryDef && dictionaryDef.definition"></div>
+                      <div class="text-slate-600 leading-relaxed italic text-sm">
+                        <span class="font-bold text-indigo-500 pr-1"
+                          x-text="dictionaryDef && dictionaryDef.partOfSpeech"></span>
+                        <span x-text="dictionaryDef && dictionaryDef.definition"></span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
 
 
-                <div class="mt-6 flex flex-wrap justify-center gap-3">
+                <div class="mt-6 flex flex-nowrap justify-center items-center gap-3 px-2">
                   <button @click="showShareModal = false; showNewGameModal = true"
-                    class="whitespace-nowrap hover:bg-indigo-100 hover:text-indigo-800 transition-colors py-2 px-6 text-sm font-bold text-indigo-600 bg-white border-2 border-indigo-100 rounded-lg">
+                    class="flex-1 whitespace-nowrap hover:bg-indigo-100 hover:text-indigo-800 transition-colors py-2 px-1 text-sm font-bold text-indigo-600 bg-white border-2 border-indigo-100 rounded-lg">
                     New Game
                   </button>
-                  <div title="Share your score">
+                  <div title="Share your score" class="flex-1">
                     <button x-ref="shareButton" @click="shareGame()"
-                      class="py-2 px-6 text-sm font-bold text-white bg-indigo-500 hover:bg-indigo-600 rounded-lg shadow-md transition-all hover:-translate-y-0.5">
+                      class="w-full whitespace-nowrap py-2 px-1 text-sm font-bold text-white bg-indigo-500 hover:bg-indigo-600 rounded-lg shadow-md transition-all hover:-translate-y-0.5">
                       Share Score
                     </button>
                   </div>
@@ -977,9 +1009,9 @@
                 </div>
 
                 <div class="flex bg-slate-100 p-1 rounded-lg">
-                  <template x-for="layout in ['QWERTY', 'DVORAK', 'ALPHA']">
+                  <template x-for="layout in ['QWERTY', 'ALPHA', 'DVORAK']">
                     <button class="flex-1 py-2 text-sm font-bold rounded-md transition-all duration-200"
-                      :class="settings.keyboardLayout === layout ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+                      :class="{'bg-white text-indigo-600 shadow-sm scale-105': settings.keyboardLayout === layout, 'text-slate-500 hover:text-slate-700': settings.keyboardLayout !== layout}"
                       @click="setKeyboardLayout(layout)" x-text="layout"></button>
                   </template>
                 </div>
@@ -989,7 +1021,7 @@
 
             <!-- Debug Tools (Dev) -->
             <!-- Debug Tools (Dev Only) - Uncomment for local testing -->
-            <!-- 
+            <!--
             <div class="border-t border-slate-100 pt-4 mt-2">
               <div class="text-xs font-bold text-slate-300 mb-2 uppercase">Debug Tools</div>
               <div class="flex gap-2">
@@ -1006,7 +1038,7 @@
                   30-Day
                 </button>
               </div>
-            </div> 
+            </div>
             -->
 
 
@@ -1112,101 +1144,19 @@
             <div class="text-slate-700 text-sm overflow-y-auto max-h-[60vh] pr-2">
               <!-- Release Notes Content -->
               <div class="space-y-4">
-
-                <div class="border-l-4 border-slate-300 pl-4 py-1">
-                  <h3 class="font-bold text-lg text-slate-800">v1.9.3: Tiny Tweak</h3>
-                  <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
-                    <li>🔧 <b>1-Letter Games:</b> Normal mode is now enabled (was locked to Ludicrous).</li>
-                  </ul>
-                </div>
-
-                <div class="border-l-4 border-indigo-500 pl-4 py-1 opacity-75">
-                  <h3 class="font-bold text-lg text-slate-800">v1.9.2: Modal Harmony</h3>
-                  <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
-                    <li>🐛 <b>Pause Logic:</b> Fixed "Game Paused" overlay appearing over other modals.</li>
-                    <li>⏱️ <b>Timer:</b> Resolved issue where timer wouldn't resume after viewing Release Notes.</li>
-                    <li>📋 <b>Notes:</b> Organized Release Notes by date (newest first).</li>
-                  </ul>
-                </div>
-
-                <div class="border-l-4 border-slate-300 pl-4 py-1 opacity-75">
-                  <h3 class="font-bold text-lg text-slate-800">v1.9.1: Polish & Fixes</h3>
-                  <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
-                    <li>🐛 <b>Validation:</b> Fixed issue with case-sensitivity in word checks.</li>
-                    <li>⏸️ <b>Pause Modal:</b> Fixed overlay visibility issues.</li>
-                  </ul>
-                </div>
-
-                <div class="border-l-4 border-slate-300 pl-4 py-1 opacity-75">
-                  <h3 class="font-bold text-lg text-slate-800">v1.9.0: The Restoration Update</h3>
-                  <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
-                    <li>💾 <b>Robust Restore:</b> Daily Challenge progress now saves reliably.</li>
-                    <li>⏱️ <b>Smart Timer:</b> Timer continues exactly where you left off.</li>
-                    <li>🚫 <b>Shake It:</b> Invalid words now trigger shake & sound effects.</li>
-                    <li>⌨️ <b>Inputs:</b> Enter key only active when word is full length.</li>
-                    <li>🐛 <b>Fixes:</b> Solved frozen keyboard & game mode switching bugs.</li>
-                  </ul>
-                </div>
-
-                <div class="border-l-4 border-slate-300 pl-4 py-1 opacity-75">
-                  <h3 class="font-bold text-lg text-slate-800">v1.8.5: The "Features" Update</h3>
-                  <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
-                    <li>📳 <b>Shake it off:</b> Invalid words now shake (and vibrate!)</li>
-                    <li>💾 <b>Daily Restore:</b> Progress saves so you can resume later.</li>
-                    <li>📱 <b>Install:</b> Add WordLetta to your home screen!</li>
-                    <li>📖 <b>Define:</b> Learn new words with the Dictionary lookup.</li>
-                  </ul>
-                </div>
-
-                <div class="border-l-4 border-slate-300 pl-4 py-1 opacity-75">
-                  <h3 class="font-bold text-lg text-slate-800">v1.8.3: Daily Sync</h3>
-                  <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
-                    <li>🔄 <b>Daily Challenge:</b> Fixed a bug where completing the challenge on one device didn't
-                      update others.</li>
-                  </ul>
-                </div>
-
-                <div class="border-l-4 border-slate-300 pl-4 py-1 opacity-75">
-                  <h3 class="font-bold text-lg text-slate-800">v1.8.1: Audio & Haptics</h3>
-                  <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
-                    <li>🎵 <b>Background Music:</b> Added "Salsangrahop" track.</li>
-                    <li>🔊 <b>Volume Controls:</b> Fine-tune your audio experience.</li>
-                  </ul>
-                </div>
-
-                <div class="border-l-4 border-slate-300 pl-4 py-1 opacity-75">
-                  <h3 class="font-bold text-lg text-slate-800">v1.7.2: Hotfix II</h3>
-                  <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
-                    <li>🐛 <b>Keyboard Colors:</b> Fixed a persistent bug where keys lost their status.</li>
-                  </ul>
-                </div>
-
-                <div class="border-l-4 border-slate-300 pl-4 py-1 opacity-75">
-                  <h3 class="font-bold text-lg text-slate-800">v1.7.0: Themes & Time!</h3>
-                  <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
-                    <li>🎨 <b>Themes:</b> Added Dark Mode & High Contrast Mode.</li>
-                    <li>⏱️ <b>Timer:</b> New m:ss format with Pause feature.</li>
-                    <li>⏸️ <b>Auto-Pause:</b> Game parses after 1 min of inactivity.</li>
-                  </ul>
-                </div>
-
-                <div class="border-l-4 border-slate-300 pl-4 py-1 opacity-75">
-                  <h3 class="font-bold text-lg text-slate-800">v1.6.0: Feel the Heat</h3>
-                  <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
-                    <li>🔥 <b>Streaks:</b> Track your daily wins!</li>
-                    <li>📳 <b>Haptics:</b> Vibration feedback on mobile.</li>
-                    <li>🌋 <b>Fire Mode:</b> Board glows hot on high streaks.</li>
-                  </ul>
-                </div>
-
-                <div class="border-l-4 border-slate-300 pl-4 py-1 opacity-75">
-                  <h3 class="font-bold text-lg text-slate-800">v1.5.0: Smooth Moves</h3>
-                  <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
-                    <li>✨ <b>Animations:</b> Sweet new tile merging and morphing effects.</li>
-                    <li>💅 <b>Polish:</b> UI refinements and ghost rows.</li>
-                  </ul>
-                </div>
-
+                <template x-for="note in releaseNotes" :key="note.version">
+                  <div class="border-l-4 pl-4 py-1 border-slate-300"
+                    :class="{'!border-indigo-500 opacity-100': note.version === version, 'opacity-75': note.version !== version}">
+                    <h3 class="font-bold text-lg text-slate-800"><span x-text="'v' + note.version"></span>: <span
+                        x-text="note.title"></span></h3>
+                    <div class="text-xs text-slate-400 mb-1" x-text="note.date"></div>
+                    <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
+                      <template x-for="(feature, idx) in (note.features || [])" :key="idx">
+                        <li x-html="feature.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')"></li>
+                      </template>
+                    </ul>
+                  </div>
+                </template>
               </div>
 
               <div class="text-xs text-slate-400 text-center mt-8 italic">
@@ -1320,7 +1270,7 @@
         class="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-2xl text-center transform scale-100 border border-slate-200 dark:border-slate-700">
         <div class="text-6xl mb-4">⏸️</div>
         <h2 class="text-2xl font-black text-slate-800 dark:text-white mb-2">Game Paused</h2>
-        <p class="text-slate-500 dark:text-slate-400 mb-6 font-mono text-xl" x-text="formattedTime"></p>
+        <p class="text-slate-500 dark:text-slate-400 mb-6 font-mono text-xl" x-text="formattedTimeSimple"></p>
         <button @click="togglePause()"
           class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-colors">
           RESUME

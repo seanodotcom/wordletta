@@ -26,7 +26,7 @@ const LAYER_DEFS = {
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '2.0.0',
+    version: '2.1.0',
     user: null,
     wordLength: 6,
     totalGuesses: 6,
@@ -216,6 +216,19 @@ export default () => ({
         "Brilliant!"
     ],
     releaseNotes: [
+        {
+            version: '2.1.0',
+            date: 'Jan 15, 2026',
+            title: 'Pronounce & Polish 🗣️✨',
+            features: [
+                '🗣️ **Pronounce:** Not sure how to say it? Tap the new Talk icon on the Game Over screen!',
+                '📖 **Define:** Definition lookup is now smoother and integrated.',
+                '🚦 **Green Light Fix:** Cursor now smartly jumps over revealed letters.',
+                '⏸️ **Pause Timer:** Now shows clean mm:ss format.',
+                '🎨 **UI Polish:** High Contrast icon visibility fixes & better bold text.',
+                '⚙️ **Settings:** Layouts reordered & active states animated.'
+            ]
+        },
         {
             version: '2.0.0',
             date: 'Jan 13, 2026',
@@ -950,6 +963,17 @@ export default () => ({
 
         // Move cursor if it was on the filled spot?
         // Logic should handle skipping.
+
+        // Fix: Explicitly check if cursor is on a filled spot and move it
+        if (this.boxStatus[this.cursor] === 2) {
+            let newCursor = this.cursor;
+            while (newCursor < this.wordLength && this.boxStatus[newCursor] === 2) {
+                newCursor++;
+            }
+            if (newCursor < this.wordLength) {
+                this.cursor = newCursor;
+            }
+        }
     },
 
     async hintBuyVowel() {
@@ -1460,6 +1484,13 @@ export default () => ({
             }, 'image/png');
         });
     },
+    speakWord() {
+        if (!this.answer) return;
+        // Use Web Speech API
+        const utterance = new SpeechSynthesisUtterance(this.answer.toLowerCase());
+        utterance.lang = 'en-US';
+        speechSynthesis.speak(utterance);
+    },
     async logStats() {
         const duration = this.startTime ? Math.round((new Date() - this.startTime) / 1000) : 0;
         let statsObj = {
@@ -1605,7 +1636,7 @@ export default () => ({
         if (this.timerInterval) clearInterval(this.timerInterval);
 
         this.timerInterval = setInterval(() => {
-            if (!this.isPaused) {
+            if (!this.isPaused && !this.isAnyModalOpen) {
                 this.gameTime += 0.1;
             }
         }, 100);
@@ -1647,7 +1678,7 @@ export default () => ({
     },
 
     get isAnyModalOpen() {
-        return this.showSettingsModal || this.showHelpModal || this.showReleaseNotesModal || this.showStatsModal || this.showNewGameModal;
+        return this.showSettingsModal || this.showHelpModal || this.showReleaseNotesModal || this.showStatsModal || this.showNewGameModal || this.showHintsModal || this.showShareModal;
     },
 
     get isPauseModalVisible() {
@@ -1655,7 +1686,20 @@ export default () => ({
     },
 
     get formattedTime() {
-        return this.gameTime.toFixed(1) + 's';
+        // Assume gameTime is in seconds (float or int)
+        const gTime = Number(this.gameTime);
+        const totalSeconds = Math.floor(gTime);
+        const m = Math.floor(totalSeconds / 60).toString();
+        const s = (totalSeconds % 60).toString().padStart(2, '0');
+        // Extract deciseconds from the fractional part
+        const ds = Math.floor((gTime % 1) * 10).toString();
+        return `${m}:${s}.${ds}`;
+    },
+    get formattedTimeSimple() {
+        const totalSeconds = Math.floor(Number(this.gameTime));
+        const m = Math.floor(totalSeconds / 60).toString();
+        const s = (totalSeconds % 60).toString().padStart(2, '0');
+        return `${m}:${s}`;
     },
     get headerTime() {
         const totalSeconds = Math.floor(this.gameTime);
@@ -1754,10 +1798,6 @@ export default () => ({
             return (val !== undefined) ? val : '';
         });
 
-        console.log('Layout:', layoutName); // DEBUG
-        console.log('Alphabet:', JSON.stringify(this.alphabet)); // DEBUG
-        console.log('Status Map:', JSON.stringify(statusMap)); // DEBUG
-        console.log('New Status:', JSON.stringify(this.alphabetStatus)); // DEBUG
 
         if (save) this.saveData();
     },
