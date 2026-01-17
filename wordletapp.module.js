@@ -32,7 +32,7 @@ const TRACKS = [
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '2.2.1',
+    version: '2.2.3',
     user: null,
     wordLength: 6,
     totalGuesses: 6,
@@ -224,6 +224,23 @@ export default () => ({
         "Brilliant!"
     ],
     releaseNotes: [
+        {
+            version: '2.2.3',
+            date: 'Jan 17, 2026',
+            title: 'Visual Polish 💅',
+            features: [
+                '🎨 **UI Tuning:** Music overlay is now more readable with adjusted opacity.',
+            ]
+        },
+        {
+            version: '2.2.2',
+            date: 'Jan 17, 2026',
+            title: 'Bug Fixes & Tune-ups 🐞',
+            features: [
+                '🐛 **Z-Index Fix:** Music overlay now correctly appears above the board in Daily Challenge mode.',
+                '🧹 **Cleanup:** Minor code optimizations.'
+            ]
+        },
         {
             version: '2.2.0',
             date: 'Jan 17, 2026',
