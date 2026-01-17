@@ -167,16 +167,16 @@
     }
 
     .bg-gradient-mesh {
-      background-color: #dcfce7;
-      /* Darker, greener base */
+      background-color: #86efac;
+      /* Darker base (emerald-300) */
       background-image:
-        radial-gradient(at 0% 0%, hsla(158, 40%, 60%, 0.4) 0px, transparent 50%),
-        radial-gradient(at 50% 0%, hsla(140, 50%, 70%, 0.4) 0px, transparent 50%),
-        radial-gradient(at 100% 0%, hsla(165, 40%, 65%, 0.4) 0px, transparent 50%),
-        radial-gradient(at 0% 50%, hsla(145, 45%, 75%, 0.4) 0px, transparent 50%),
-        radial-gradient(at 100% 50%, hsla(150, 40%, 70%, 0.4) 0px, transparent 50%),
-        radial-gradient(at 0% 100%, hsla(160, 45%, 65%, 0.4) 0px, transparent 50%),
-        radial-gradient(at 100% 100%, hsla(155, 40%, 68%, 0.4) 0px, transparent 50%);
+        radial-gradient(at 0% 0%, hsla(158, 40%, 40%, 0.5) 0px, transparent 50%),
+        radial-gradient(at 50% 0%, hsla(140, 50%, 50%, 0.5) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, hsla(165, 40%, 45%, 0.5) 0px, transparent 50%),
+        radial-gradient(at 0% 50%, hsla(145, 45%, 55%, 0.5) 0px, transparent 50%),
+        radial-gradient(at 100% 50%, hsla(150, 40%, 50%, 0.5) 0px, transparent 50%),
+        radial-gradient(at 0% 100%, hsla(160, 45%, 45%, 0.5) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, hsla(155, 40%, 48%, 0.5) 0px, transparent 50%);
     }
 
     /* Custom Scrollbar for Stats */
@@ -206,7 +206,7 @@
     <!-- Header -->
     <!-- Header -->
     <header :class="dailyChallenge ? 'bg-white/40 dark:bg-slate-900/40 backdrop-blur-md' : 'bg-white dark:bg-slate-900'"
-      class="flex-none p-4 pb-2 border-b border-indigo-50 dark:border-slate-800 z-20 transition-colors duration-300">
+      class="flex-none p-4 pb-2 border-b border-indigo-50 dark:border-slate-800 z-30 transition-colors duration-300">
       <div class="max-w-lg mx-auto flex items-center justify-between">
         <!-- Left: Logo & Branding -->
         <div class="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
@@ -477,7 +477,7 @@
         </div>
         <!-- NEW GAME modal -->
         <div x-show="showNewGameModal" x-transition.opacity.duration.600ms style="display: none;"
-          class="fixed inset-0 z-30 flex items-center justify-center overflow-hidden bg-slate-900 bg-opacity-40 backdrop-blur-sm">
+          class="fixed inset-0 z-40 flex items-center justify-center overflow-hidden bg-slate-900 bg-opacity-40 backdrop-blur-sm">
           <!-- modal inner -->
           <div x-show="showNewGameModal" x-transition.duration.600ms
             class="w-[90%] md:w-1/2 lg:w-2/5 p-4 md:p-6 mx-auto bg-white rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden"
@@ -528,8 +528,10 @@
                     class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 border border-indigo-200 shadow-sm">Game
                     In Progress </span></div><template x-if="!dailyChallengeComplete">
                   <!-- Button changes function based on state --><button @click="startDailyGame()"
-                    class="h-12 flex items-center justify-center w-full hover:shadow-lg transition-all transform hover:-translate-y-0.5 py-2 px-6 text-center text-lg font-bold rounded-lg shadow-md bg-gradient-mesh text-emerald-900 border border-emerald-200"><span
-                      class="text-3xl mr-3 font-bold leading-none mb-1">📅</span><span
+                    class="h-12 flex items-center justify-center w-full hover:shadow-lg transition-all transform hover:-translate-y-0.5 py-2 px-6 text-center text-lg font-bold rounded-lg shadow-md bg-gradient-mesh text-emerald-900 border border-emerald-200">
+                    <!-- Icon: Check if complete, else Calendar -->
+                    <img :src="dailyChallengeComplete ? '/icons/calendar-check.svg' : '/icons/calendar.svg'"
+                      class="w-6 h-6 mr-3 opacity-80" :class="dailyChallengeComplete ? 'text-emerald-700' : ''"><span
                       x-text="dailyChallengeInProgress ? 'Finish Today\'s Challenge' : 'Play Today\'s Challenge!'"></span></button>
                 </template><template x-if="dailyChallengeComplete">
                   <div class="flex flex-col items-center gap-1"><span

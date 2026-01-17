@@ -32,7 +32,7 @@ const TRACKS = [
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '2.2.0',
+    version: '2.2.1',
     user: null,
     wordLength: 6,
     totalGuesses: 6,

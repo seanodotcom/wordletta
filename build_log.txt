@@ -1,0 +1,29 @@
+
+> wordletapp@2.1.1 build
+> vite build
+
+vite v2.7.13 building for production...
+Γ£ô 0 modules transformed.
+[vite:build-html] Unable to parse HTML; 12
+ at {"file":"C:/CODE/TEST/Antigravity/wordletta/index.html","line":191,"column":6}
+189|      @keyup.window="keyPressed(); resetIdleTimer()" @click.window="resetIdleTimer()"
+190|      @mousemove.window.throttle.1000ms="resetIdleTimer()">
+191|      < !-- Header -->
+   |       ^
+192|        <header
+193|          class="flex-none p-4 pb-2 border-b border-indigo-50 dark:border-slate-800 bg-white dark:bg-slate-900 z-20">
+file: C:/CODE/TEST/Antigravity/wordletta/index.html
+error during build:
+Error: Unable to parse HTML; 12
+ at {"file":"C:/CODE/TEST/Antigravity/wordletta/index.html","line":191,"column":6}
+189|      @keyup.window="keyPressed(); resetIdleTimer()" @click.window="resetIdleTimer()"
+190|      @mousemove.window.throttle.1000ms="resetIdleTimer()">
+191|      < !-- Header -->
+   |       ^
+192|        <header
+193|          class="flex-none p-4 pb-2 border-b border-indigo-50 dark:border-slate-800 bg-white dark:bg-slate-900 z-20">
+    at handleParseError (C:\CODE\TEST\Antigravity\wordletta\node_modules\vite\dist\node\chunks\dep-f5552faa.js:21459:11)
+    at traverseHtml (C:\CODE\TEST\Antigravity\wordletta\node_modules\vite\dist\node\chunks\dep-f5552faa.js:21415:9)
+    at async Object.transform (C:\CODE\TEST\Antigravity\wordletta\node_modules\vite\dist\node\chunks\dep-f5552faa.js:21492:17)
+    at async transform (C:\CODE\TEST\Antigravity\wordletta\node_modules\rollup\dist\shared\rollup.js:21995:16)
+    at async ModuleLoader.addModuleSource (C:\CODE\TEST\Antigravity\wordletta\node_modules\rollup\dist\shared\rollup.js:22215:30)
