@@ -306,7 +306,7 @@
         <div class="bg-white p-2 rounded-lg"><img src="/logo.png" class="w-8 h-8 object-contain"></div>
         <div>
           <h4 class="font-bold text-lg">Install WordLetta</h4>
-          <p class="text-xs text-indigo-100">Add to Home Screen for a better experience !</p>
+          <p class="text-xs text-indigo-100">Add to Home Screen for a better experience!</p>
         </div>
       </div>
       <div class="flex gap-2 w-full sm:w-auto"><button @click="dismissInstall"
@@ -536,7 +536,7 @@
                 </template><template x-if="dailyChallengeComplete">
                   <div class="flex flex-col items-center gap-1"><span
                       class="text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full">Challenge
-                      Complete. See you tomorrow !</span><button @click="viewDailyBoard()"
+                      Complete. See you tomorrow!</span><button @click="viewDailyBoard()"
                       class="text-xs text-indigo-500 hover:text-indigo-700 underline mt-1">View
                       Board</button></div>
                 </template>
@@ -545,7 +545,7 @@
               <div class="mt-3 pt-3 w-full text-center">
                 <h3 class="text-2xl font-bold mt-1 mb-1 text-indigo-500">Endless
                   Challenge</h3>
-                <div class="text-sm text-slate-400 mb-3">Play as much as you like !
+                <div class="text-sm text-slate-400 mb-3">Play as much as you like!
                 </div>
                 <div class="flex flex-col items-center gap-2 mb-3">
                   <div class="flex justify-center gap-1 flex-wrap"><template x-for="i in 5"><button
@@ -958,9 +958,10 @@
             class="w-4/5 md:w-3/5 lg:w-2/5 p-6 mx-auto bg-white rounded-xl shadow-2xl"
             @click.away="showHintsModal = false">
             <!-- Title / Close-->
-            <div class="flex items-start justify-between mb-6 border-b border-slate-100 pb-2">
-              <h5 class="mr-3 text-slate-800 max-w-none text-xl font-bold flex items-center gap-2"><img
-                  src="/icons/light-bulb.svg" class="w-6 h-6 inline-block opacity-80 invert">Need a
+            <!-- Title / Close-->
+            <div class="flex items-center justify-between mb-6 border-b border-slate-100 pb-2">
+              <h5 class="text-slate-800 text-xl font-bold flex items-center gap-2"><img src="/icons/light-bulb.svg"
+                  class="w-6 h-6 inline-block opacity-80 invert">Need a
                 Hint? </h5><button type="button"
                 class="text-2xl font-bold text-slate-400 hover:text-slate-600 cursor-pointer"
                 @click="showHintsModal = false">&times;
@@ -968,8 +969,8 @@
             </div>
             <!-- content -->
             <div class="flex flex-col gap-4">
-              <p class="text-sm text-slate-500 mb-2">You have <b><span x-text="maxHints - hintsUsed"></span></b>hints
-                remaining. Choose wisely !</p>
+              <p class="text-sm text-slate-500 mb-2">You have <b><span x-text="maxHints - hintsUsed"></span></b> hints
+                remaining. Choose wisely!</p>
               <!-- Hint Options -->
               <div class="grid grid-cols-1 gap-4">
                 <!-- 1. Letta Bomb --><button @click="hintLettaBomb()" :disabled="(hintsUsed >= maxHints)"
@@ -978,7 +979,7 @@
                   <div class="text-3xl bg-slate-100 p-3 rounded-full group-hover:bg-white transition-colors">
                     💣</div>
                   <div>
-                    <div class="font-bold text-slate-800 text-lg">Letta Bomb !</div>
+                    <div class="font-bold text-slate-800 text-lg">Letta Bomb!</div>
                     <div class="text-xs text-slate-500">Explodes 3 incorrect letters on the
                       keyboard.</div>
                   </div>
@@ -990,9 +991,9 @@
                   <div class="text-3xl bg-slate-100 p-3 rounded-full group-hover:bg-white transition-colors">
                     🚦</div>
                   <div>
-                    <div class="font-bold text-slate-800 text-lg">Green Light !</div>
+                    <div class="font-bold text-slate-800 text-lg">Green Light!</div>
                     <div class="text-xs text-slate-500">Turns a yellow letter Green and moves it
-                      to the right spot ! </div>
+                      to the right spot. </div>
                     <div x-show="!hasYellowLetters && (hintsUsed < maxHints)"
                       class="text-[10px] text-rose-400 font-bold mt-1">Requires a yellow letter
                     </div>
@@ -1005,11 +1006,11 @@
                   <div class="text-3xl bg-slate-100 p-3 rounded-full group-hover:bg-white transition-colors">
                     🅰️</div>
                   <div>
-                    <div class="font-bold text-slate-800 text-lg">Buy a Vowel !</div>
+                    <div class="font-bold text-slate-800 text-lg">Buy a Vowel!</div>
                     <div class="text-xs text-slate-500">Reveals an un-guessed vowel on the
                       keyboard.</div>
                     <div x-show="allVowelsFound && (hintsUsed < maxHints)"
-                      class="text-[10px] text-emerald-500 font-bold mt-1">All vowels found !
+                      class="text-[10px] text-emerald-500 font-bold mt-1">All vowels found!
                     </div>
                   </div>
                 </button>
