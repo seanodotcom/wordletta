@@ -23,10 +23,16 @@ const LAYER_DEFS = {
     ]
 };
 
+const TRACKS = [
+    { name: 'Salsangra', file: 'wordletta-bg-salsangrahop.wav' },
+    { name: 'Chill Sham', file: 'wordletta-chill-sham.wav' },
+    { name: 'Dirty Dreamy', file: 'wordletta-dirty-dreamy.wav' }
+];
+
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '2.1.0',
+    version: '2.2.0',
     user: null,
     wordLength: 6,
     totalGuesses: 6,
@@ -51,7 +57,6 @@ export default () => ({
     // Animation States
     showBombAnimation: false,
     bombFloatingKeys: [], // {char, x, y, w, h}
-    bombStage: 0, // 0: init, 1: fly, 2: explode
     bombStage: 0, // 0: init, 1: fly, 2: explode
     highlightKey: '', // char to pulse highlight
 
@@ -92,7 +97,8 @@ export default () => ({
         haptics: true,
 
         theme: 'light', // 'light', 'dark', 'contrast'
-        keyboardLayout: 'QWERTY'
+        keyboardLayout: 'QWERTY',
+        musicTrack: 'wordletta-dirty-dreamy.wav'
     },
     // Timer State
     gameTime: 0,
@@ -105,6 +111,8 @@ export default () => ({
     // Music State
     bgMusic: null,
     isTweening: false,
+    statsTab: 'endless',
+    tracks: TRACKS,
 
 
     resetIdleTimer() {
@@ -217,6 +225,17 @@ export default () => ({
     ],
     releaseNotes: [
         {
+            version: '2.2.0',
+            date: 'Jan 17, 2026',
+            title: 'Polished & Tuned 🎵✨',
+            features: [
+                '🎵 **Audio feedback:** Hearing things? Settings now ping!',
+                '🧊 **Glassy UI:** Music overlay got a frosty makeover.',
+                '📊 **Stats Icon:** Better visibility in the footer.',
+                '🐛 **Bug Fixes:** Overlay z-index & various tweaks.'
+            ]
+        },
+        {
             version: '2.1.0',
             date: 'Jan 15, 2026',
             title: 'Pronounce & Polish 🗣️✨',
@@ -271,9 +290,11 @@ export default () => ({
     },
     get guessDistribution() {
         // return array of 6 integers representing wins at each guess count
-        if (!this.endlessStats) return [0, 0, 0, 0, 0, 0]
+        // displayedStats is the source of truth now
+        const source = this.displayedStats;
+        if (!source) return [0, 0, 0, 0, 0, 0]
         let dist = [0, 0, 0, 0, 0, 0]
-        this.endlessStats.filter(g => g.isWinner).forEach(g => {
+        source.filter(g => g.isWinner).forEach(g => {
             if (g.numGuesses >= 1 && g.numGuesses <= 6) {
                 dist[g.numGuesses - 1]++
             }
@@ -307,13 +328,21 @@ export default () => ({
 
         return gradient.replace(/, $/, ')');
     },
-    get recentHistory() {
-        return this.endlessStats ? this.endlessStats.slice().reverse().slice(0, 50) : []
+    get displayedStats() {
+        if (!this.endlessStats) return [];
+        if (this.statsTab === 'daily') {
+            return this.endlessStats.filter(g => g.dailyChallengeDay !== undefined);
+        } else {
+            return this.endlessStats.filter(g => g.dailyChallengeDay === undefined);
+        }
     },
-    get userGames() { return this.endlessStats && this.endlessStats.length },
-    get userWins() { return this.endlessStats && this.endlessStats.filter(g => g.isWinner).length },
-    get userLosses() { return this.endlessStats && this.endlessStats.filter(g => !g.isWinner).length },
-    get userWinPct() { return Math.round((this.userWins / this.userGames) * 100) },
+    get recentHistory() {
+        return this.displayedStats.slice().reverse().slice(0, 50)
+    },
+    get userGames() { return this.displayedStats.length },
+    get userWins() { return this.displayedStats.filter(g => g.isWinner).length },
+    get userLosses() { return this.displayedStats.filter(g => !g.isWinner).length },
+    get userWinPct() { return (this.userGames > 0) ? Math.round((this.userWins / this.userGames) * 100) : 0 },
     get isMobile() {
         return (('ontouchstart' in window) ||
             (navigator.maxTouchPoints > 0) ||
@@ -529,10 +558,6 @@ export default () => ({
             this.letterClicked(k.toUpperCase())
         }
     },
-    // PWA State
-    installPrompt: null,
-    showInstallPrompt: false,
-    dictionaryDef: null, // Dictionary Definition
     // ...
     async restoreDailyGame() {
         console.log("Explicitly restoring Daily Challenge...");
@@ -1776,11 +1801,26 @@ export default () => ({
     },
 
     toggleSound() {
+        if (!this.audioCtx) this.initAudio();
         this.settings.sound = !this.settings.sound;
         this.saveData();
+        if (this.settings.sound) {
+            // Play C5 (523.25 Hz), 0 delay, 0.1s duration
+            this.playNote(523.25, 0, 0.1);
+        }
     },
     toggleMusic() {
         this.settings.music = !this.settings.music;
+
+        if (this.settings.music) {
+            if (!this.settings.musicVolume || this.settings.musicVolume <= 0) {
+                this.settings.musicVolume = this.settings.lastVolume || 0.5;
+            }
+            if (this.bgMusic) {
+                this.bgMusic.volume = this.settings.musicVolume;
+            }
+        }
+
         this.saveData();
         this.updateMusicState();
     },
@@ -2129,9 +2169,22 @@ export default () => ({
     // Background Music Methods
     initMusic() {
         if (!this.bgMusic) {
-            this.bgMusic = new Audio('/audio/wordletta-bg-salsangrahop.wav');
+            this.bgMusic = new Audio('/audio/' + (this.settings.musicTrack || 'wordletta-dirty-dreamy.wav'));
             this.bgMusic.loop = true;
             this.bgMusic.volume = this.settings.musicVolume || 0.3;
+        }
+    },
+    setMusicTrack(track) {
+        this.settings.musicTrack = track;
+        this.saveData();
+        if (this.bgMusic) {
+            const wasPlaying = !this.bgMusic.paused;
+            this.bgMusic.src = '/audio/' + track;
+            if (wasPlaying && this.settings.music) {
+                this.bgMusic.play().catch(e => { });
+            }
+        } else {
+            this.initMusic();
         }
     },
 
