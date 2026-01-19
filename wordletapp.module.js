@@ -32,7 +32,7 @@ const TRACKS = [
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '2.2.3',
+    version: '2.2.4',
     user: null,
     wordLength: 6,
     totalGuesses: 6,
@@ -224,6 +224,14 @@ export default () => ({
         "Brilliant!"
     ],
     releaseNotes: [
+        {
+            version: '2.2.4',
+            date: 'Jan 18, 2026',
+            title: 'Bug Fixes 🛠️',
+            features: [
+                '🐛 **View Board Fix:** Now correctly shows your completed board for the Daily Challenge.',
+            ]
+        },
         {
             version: '2.2.3',
             date: 'Jan 17, 2026',
@@ -677,13 +685,48 @@ export default () => ({
             this.guesses = dailyData.guesses;
             this.answer = dailyData.answer;
             this.dailyChallenge = true;
-            this.isWinner = dailyData.isWinner || true;
+            this.isWinner = dailyData.isWinner;
+            this.isLoser = !dailyData.isWinner;
             this.gameTime = dailyData.duration || 0;
-            // Force keyboard status update if needed, though watcher might handle it on guess change
-            // But guesses are replaced, so we might need to trigger alphabet update manually?
-            // Actually, letters/boxStatus might need update?
-            // Let's rely on 'guesses' watcher if it exists, or call updateBoxStatus?
-            // For now, minimal implementation which sets the state variables.
+
+            // Fix dimensions for daily challenge
+            this.wordLength = 6;
+            this.hardMode = false;
+
+            // Fix: Re-calculate local state (colors) to ensure board isn't blank
+            this.guessStatus = [];
+            this.alphabetStatus = new Array(this.alphabet.length).fill('');
+
+            this.guesses.forEach(g => {
+                let answerClone = this.answer.split('');
+                let currentBoxStatus = new Array(6).fill(0);
+                let letters = g.split('');
+
+                // 1. Exact matches (Green)
+                letters.forEach((l, i) => {
+                    if (l === answerClone[i]) {
+                        this.alphabetStatus[this.alphabet.indexOf(l)] = 2;
+                        currentBoxStatus[i] = 2;
+                        answerClone[i] = null;
+                    }
+                });
+
+                // 2. Partial matches (Yellow) or Misses (Gray)
+                letters.forEach((l, i) => {
+                    if (l && answerClone.includes(l)) {
+                        if (this.alphabetStatus[this.alphabet.indexOf(l)] !== 2) this.alphabetStatus[this.alphabet.indexOf(l)] = 1;
+                        if (!currentBoxStatus[i]) currentBoxStatus[i] = 1;
+                        answerClone[answerClone.indexOf(l)] = null;
+                    } else if (l) {
+                        if (this.alphabetStatus[this.alphabet.indexOf(l)] === '') this.alphabetStatus[this.alphabet.indexOf(l)] = 0;
+                    }
+                });
+                this.guessStatus.push(currentBoxStatus.join(''));
+            });
+
+            // Logic to disable input since game is over
+            this.cursor = 0;
+            this.isClearing = false;
         }
         this.showNewGameModal = false;
     },
