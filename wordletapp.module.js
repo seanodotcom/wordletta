@@ -32,7 +32,7 @@ const TRACKS = [
 // Alpine.data('wordletApp', () => ({
 export default () => ({
     title: 'WordLetta',
-    version: '2.2.4',
+    version: '2.2.5',
     user: null,
     wordLength: 6,
     totalGuesses: 6,
@@ -224,6 +224,14 @@ export default () => ({
         "Brilliant!"
     ],
     releaseNotes: [
+        {
+            version: '2.2.5',
+            date: 'Jan 18, 2026',
+            title: 'Under the Hood ⚙️',
+            features: [
+                '🔬 **Internal Testing:** Added robust verification for game timer logic.',
+            ]
+        },
         {
             version: '2.2.4',
             date: 'Jan 18, 2026',
